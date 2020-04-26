@@ -126,7 +126,8 @@ var games = [];
 
 // GET HOMEPAGE
 app.get('/', function(req, res){
-    res.sendFile(__dirname + '/views/index.html'); 
+    // res.sendFile(__dirname + '/views/index.html'); 
+    res.redirect(__dirname + '/views/index.html'); 
 }); 
 
 
