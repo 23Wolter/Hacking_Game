@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Real-Time Web Applications - Project</title>
+    
+    <link rel="shortcut icon" href="#" />
+    <meta charset="UTF-8">
+    
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Javascript files -->
+    <!-- <script src="/javascripts/screen-shutdown.js"></script> -->
+    <script src="/javascripts/typewriter-effect.js"></script>
+    <script src="/javascripts/text-handler.js"></script>
+    <script src="/javascripts/player-init.js"></script>
+    <script src="/javascripts/player-input.js"></script>
+    <script src="/javascripts/server-input.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" type="text/css" href="stylesheets/header.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/content.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/typewriter-effect.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/screen-shutdown.css">
+</head>
+
+<body>
+
+    <!-- BEGIN HEADER -->
+    <div id="header">
+
+        <button id="startBtn" hidden><div></div></button>
+        <audio id="click1">
+            <source src="/files/click1.ogg" type="audio/ogg">
+        </audio>
+        <audio id="click2">
+            <source src="/files/click2.wav" type="audio/wav">
+        </audio>
+        <audio id="buzz" loop>
+            <source src="/files/buzz.mp3" type="audio/mp3">
+        </audio>
+
+        <audio id="intro_start">
+            <source src="/files/computer_startup.mp3" type="audio/mp3">
+        </audio>
+        <audio id="intro_start2">
+            <source src="/files/computer_buzz.wav" type="audio/wav">
+        </audio>
+        <audio id="typing_sound">
+            <source src="/files/telemetry.wav" type="audio/wav">
+        </audio>
+        <audio id="computer_beep">
+            <source src="/files/computer_beep.wav" type="audio/wav">
+        </audio>
+        <audio id="computer_glitch">
+            <source src="/files/glitch.wav" type="audio/wav">
+        </audio>
+        <audio id="computer_warning">
+            <source src="/files/warning.wav" type="audio/wav">
+        </audio>
+        <audio id="suspense_loop" loop>
+            <source src="/files/suspense_loop.flac" type="audio/flac">
+        </audio>
+        <audio id="intro_track_suspense" loop>
+            <source src="/files/bensound-funkysuspense.mp3" type="audio/mp3">
+        </audio>
+    </div>
+    <!-- END HEADER -->
+    
+    <!-- BEGIN CONTENT -->
+    <div id="content">
+        
+        <!-- <img id="old-pc-screen" src="images/screen.png"> -->
+        <img id="postit" src="images/postit.jpg" hidden>
+
+        <div id="text-input-field">
+            <form id="player-interaction" action="/player-interaction" method="post">
+
+                <div id="write-text"></div>
+
+                <label for="player-input-txt" class="monitor-text">></label>
+                <input type="text" id="player-input-txt" name="player-input" autocomplete="off">
+                
+                <input type="submit" hidden>    
+
+            </form>
+        </div>
+
+        <audio id="track1" loop>
+            <source src="/files/mission_impossible.mp3" type="audio/mp3">
+        </audio>
+        <audio id="track2" loop>
+            <source src="/files/undertale_bonetrousle.mp3" type="audio/mp3">
+        </audio>
+        <audio id="track3" loop>
+            <source src="/files/typhoon_turnpike.mp3" type="audio/mp3">
+        </audio>
+
+        <audio id="kill_sound" loop>
+            <source src="/files/computer_sound.mp3" type="audio/mp3">
+        </audio>
+
+        <audio id="tv-off">
+            <source src="/files/tv-off.wav" type="audio/wav">
+        </audio>
+
+        <audio id="portal_radio" loop>
+            <source src="/files/portal_radio.mp3" type="audio/mp3">
+        </audio>
+
+        <audio id="fanfare">
+            <source src="/files/fanfare.mp3" type="audio/mp3">
+        </audio>
+
+        <audio id="aww">
+            <source src="/files/aww.wav" type="audio/wav">
+        </audio>
+
+    </div>    
+    <!-- END CONTENT -->
+    
+</body>
+
+<!-- KILLCODE: I want to travel east -->
+
+</html>

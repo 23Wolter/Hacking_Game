@@ -1,0 +1,10 @@
+body {
+    background-image: url("../images/background0.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-color: black; 
+}
+
+#title {
+    text-align: center; 
+}

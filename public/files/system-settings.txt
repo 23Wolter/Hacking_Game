@@ -1,0 +1,20 @@
+## standard OS = Windows 95
+## root = (hd0, 0) 
+## saveddefault
+## makeactive
+## chainloader +1
+
+## title = Ubuntu Linux
+## root = (hd0, 2)
+## kernel = /boot/vmlinuz-2.6.15-25-386
+            root=/dev/hda3 ro quiet splash
+## initrd = /boot/initrd.img-2.6.15-25-386
+boot 
+
+## system-settings ##
+*********************
+help - type the following settings in the admin folder
+
+## SHOW HIDDEN-FILES
+
+*********************

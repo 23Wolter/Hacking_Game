@@ -1,0 +1,66 @@
+<DATABASE>
+<NOTE>
+  <TO>Myself</TO>
+  <HEADING>Reminder</HEADING>
+  <BODY>Don't forget this data!</BODY>
+</NOTE>
+<CATALOG>
+  <CD>
+    <PRIORITY>1</PRIORITY>
+    <TITLE>Nevermind</TITLE>
+    <ARTIST>Nirvana</ARTIST>
+    <COUNTRY>USA</COUNTRY>
+    <COMPANY>Butch Vig</COMPANY>
+    <PRICE>9.90</PRICE>
+    <YEAR>1991</YEAR>
+  </CD>
+  <CD>
+    <PRIORITY>2</PRIORITY>
+    <TITLE>News of the World</TITLE>
+    <ARTIST>Queen</ARTIST>
+    <COUNTRY>UK</COUNTRY>
+    <COMPANY>EMI</COMPANY>
+    <PRICE>10.90</PRICE>
+    <YEAR>1977</YEAR>
+  </CD>
+  <CD>
+    <PRIORITY>3</PRIORITY>
+    <TITLE>The Black Box</TITLE>
+    <ARTIST>Gasolin</ARTIST>
+    <COUNTRY>DK</COUNTRY>
+    <COMPANY>Columbia</COMPANY>
+    <PRICE>9.90</PRICE>
+    <YEAR>2003</YEAR>
+  </CD>
+</CATALOG>
+<FOOD>
+  <BREAKFAST_MENU>
+    <NAME>Belgian Waffles</NAME>
+    <PRICE>$5.95</PRICE>
+    <DESCRIPTION>
+      Two Belgian Waffles with plenty of real maple syrup
+    </DESCRIPTION>
+    <CALORIES>650</CALORIES>
+  </BREAKFAST_MENU>
+  <BREAKFAST_MENU>
+    <NAME>French Toast</NAME>
+    <PRICE>$4.50</PRICE>
+    <DESCRIPTION>
+      Thick slices made from homemade sourdough bread
+    </DESCRIPTION>
+    <CALORIES>600</CALORIES>
+  </BREAKFAST_MENU>
+  <BREAKFAST_MENU>
+    <NAME>Homestyle Breakfast</NAME>
+    <PRICE>$6.95</PRICE>
+    <DESCRIPTION>
+      Two eggs, bacon or sausage, toast, and hash browns
+    </DESCRIPTION>
+    <CALORIES>950</CALORIES>
+  </BREAKFAST_MENU>
+</FOOD>
+<PERSONAL>
+  <USERNAME>JOSE</USERNAME>
+  <PASSWORD>ABC</PASSWORD>
+</PERSONAL>
+</DATABASE>

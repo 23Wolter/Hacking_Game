@@ -1,0 +1,99 @@
+#old-pc-screen {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%; 
+}
+
+#postit {
+    position: absolute;
+    left: 57.5vw;
+    top: 14.7vw;
+    z-index: 5;
+    width: 9.4vw;
+    height: 8.4vw;
+}
+
+#startBtn {
+    width: 1.2vw;
+    height: 1.2vw;
+    position: absolute;
+    left: 64.3vw;
+    top: 41.5vw;
+    text-align: center;
+    cursor: pointer;
+    outline: none;
+    color: #fff;
+    background-color: #3d3c37;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 -5px #4c4c43;
+    background-image: url("../images/shutdown.png");
+    background-size: cover;
+}
+
+/* Icon credit: Darius Dan */
+
+#startBtn div {
+    width: 0.25vw;
+    height: 0.25vw;
+    margin-left: 25%;
+    margin-top: 40%;
+    background-color: #3d3c37;
+    border-radius: 100%;
+}
+
+
+#startBtn:active {
+    background-color: #3d3c37;
+    box-shadow: 0 -3px #4c4c43;
+    transform: translateY(-2px);
+  }
+
+#text-input-field {
+    width: 27%; 
+    height: 19vw; 
+    background-color: black; 
+    position: absolute; 
+    top: 18vw; 
+    left: 36.5%; 
+    overflow: hidden; 
+    float: left; 
+}
+
+.monitor-text {
+    color: lawngreen; 
+    font-family: 'IBM Plex Mono', monospace;   
+    font-size: 0.75vw; 
+}
+
+label.monitor-text {
+    float: left; 
+    width: 2%; 
+}
+
+#player-input-txt {
+    width: 50%;  
+    background-color: black; 
+
+    color: lawngreen; 
+    font-family: 'IBM Plex Mono', monospace;   
+    font-size: 0.75vw; 
+    
+    border-top-style: hidden;
+    border-right-style: hidden;
+    border-left-style: hidden;
+    border-bottom-style: hidden;
+    text-transform: uppercase;
+}
+
+#player-input-txt:focus {
+    outline: none; 
+}
+
+
+.player-input-print {
+    color: lawngreen; 
+    font-family: 'IBM Plex Mono', monospace; 
+    font-size: 0.75vw;
+}
