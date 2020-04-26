@@ -13,9 +13,13 @@ const port = process.env.PORT || 3000
 //   res.end('<h1>Hello World</h1>');
 // });
 
-server.listen(port,() => {
-  console.log(`Server running at port `+port);
-});
+http.listen(port, function() {
+    console.log('listening on : ' + port); 
+}); 
+
+// server.listen(port,() => {
+//   console.log(`Server running at port `+port);
+// });
 
 
 
@@ -816,18 +820,3 @@ function getCurrentGameInfo(game_ID, player_ID) {
 
     return currentGameInfo; 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-// http.listen(3000, function() {
-//     console.log('listening on :3000'); 
-// }); 
