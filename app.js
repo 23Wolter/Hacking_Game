@@ -125,7 +125,7 @@ var games = [];
 
 
 // GET HOMEPAGE
-app.get('/index', function(req, res){
+app.get('/', function(req, res){
     res.sendFile(__dirname + '/views/index.html'); 
     // res.redirect(__dirname + '/views/index.html'); 
 }); 
@@ -813,6 +813,6 @@ function getCurrentGameInfo(game_ID, player_ID) {
 
 
 
-http.listen(3000, function() {
-    console.log('listening on :3000'); 
-}); 
+// http.listen(3000, function() {
+//     console.log('listening on :3000'); 
+// }); 
