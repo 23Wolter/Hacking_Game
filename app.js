@@ -1,8 +1,24 @@
 var express = require('express');
 var app = express(); 
-var http = require('http').createServer(app);
+// var http = require('http').createServer(app);
 var io = require('socket.io')(http); 
 var path = require('path');
+
+
+const http = require('http');
+const port = process.env.PORT || 3000
+
+const server = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/html');
+  res.end('<h1>Hello World</h1>');
+});
+
+server.listen(port,() => {
+  console.log(`Server running at port `+port);
+});
+
+
 
 // SET DEFAULT FOLDER TO PUBLIC
 app.use(express.static(path.join(__dirname, 'public')));
