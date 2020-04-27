@@ -71,8 +71,6 @@ function writeInitTextFromServer(textArrays) {
     setTimeout(function() {
         $('#typing_sound')[0].pause();
         $('#typing_sound')[0].currentTime = 0;
-
-        $('#text-input-field').addClass('_off');
     }, 19000);
 
     setTimeout(function() {
@@ -111,7 +109,7 @@ function writeInitTextFromServer(textArrays) {
             $('#intro_track_suspense').prop("volume", 0);
             $('#intro_track_suspense')[0].play();
             $('#intro_track_suspense').animate({volume: 1}, 1000, function () {});
-        }, 30000);
+        }, 35000);
 
     }, 36000);
 

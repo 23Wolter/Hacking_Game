@@ -254,7 +254,7 @@ $(document).ready(function() {
             $('#computer_glitch').prop("volume", 0.5);
             $('#computer_glitch')[0].play();
 
-            writeCommandFromServer(["...¤¤¤..@..?...*#..!.........", "*YOU HAVE BEEN HACKED*", ("incoming message from your hacker: " + serverInfo[3]), serverInfo[0]]);
+            writeCommandFromServer(["...¤¤¤..@..?...*#..!.........", "* YOU HAVE BEEN HACKED *", ("incoming message from your hacker, " + serverInfo[3] + ": " + serverInfo[0])]);
 
             setTimeout(function() {
 
