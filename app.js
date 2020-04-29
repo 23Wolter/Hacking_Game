@@ -4,6 +4,7 @@ var http = require('http').createServer(app);
 // const http = require('http');
 const io = require('socket.io')(http); 
 const path = require('path');
+var mongoose = require('mongoose');
 
 const port = process.env.PORT || 3000
 
@@ -21,10 +22,61 @@ http.listen(port, function() {
 //   console.log(`Server running at port `+port);
 // });
 
-
-
 // SET DEFAULT FOLDER TO PUBLIC
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+
+
+
+// URL of mLab mongo database 
+var mongoDB = 'mongodb://olini16:StarWars070694@ds161112.mlab.com:61112/hacking-game';
+
+var options = {
+    useMongoClient: true
+};
+
+// connect to mongodb 
+mongoose.connect(mongoDB, options);
+mongoose.Promise = global.Promise;
+var db = mongoose.connection;
+
+// create schema - the structure of the database 
+var Schema = mongoose.Schema; 
+
+// schema for rooms in the game
+var roomSchema = new Schema({
+	name: String, 
+    accessible: Boolean,
+    nextRooms: { type: Array, default: []},
+    prevRoom: String,
+    items: { type: Array, default: []}
+},{usePushEach: true}); 
+
+var rooms = mongoose.model('rooms', roomSchema);
+
+
+// schema for games
+var gamesSchema = new Schema({
+	gameID: String, 
+    playerNumber: Number,
+    players: [{
+        player: {
+            username: String,
+            password: String, 
+            playerID: String,
+            room: String,
+            opponent: String,
+            opponentPassword: String,
+            hiddenFiles: Boolean,
+            killcode: { type: Array, default: [
+                false, false, false, false, false
+            ]}
+        }
+    }]
+},{usePushEach: true}); 
+
+var games = mongoose.model('games', gamesSchema);
 
 
 
@@ -41,66 +93,66 @@ var commands = {
     command2: "GOTO",
     command3: "OPEN"
 };
-var rooms = [
-    {
-        name: "/root",
-        accessible: true,
-        nextRooms: [
-            "/root/applications",
-            "/root/users"
-        ],
-        prevRoom: "/root",
-        items: [
-            "README.txt"
-        ]
-    },
-    {
-        name: "/root/applications",
-        accessible: true,
-        nextRooms: [],
-        prevRoom: "/root",
-        items: [
-            "musicplayer.exe",
-            "chat.exe"
-        ]
-    },
-    {
-        name: "/root/users",
-        accessible: true,
-        nextRooms: [
-            "/root/users/personal",
-            "/root/users/admin"
-        ],
-        prevRoom: "/root",
-        items: []
-    },
-    {
-        name: "/root/users/personal",
-        accessible: true,
-        nextRooms: [],
-        prevRoom: "/root/users",
-        items: [
-            "image03.jpg",
-            "image07.jpg",
-            "image13.jpg",
-            "image19.jpg",
-            "penny.jpg",
-            "database.txt",
-            "some files are hidden"
-        ]
-    },
-    {
-        name: "/root/users/admin",
-        accessible: false,
-        nextRooms: [],
-        prevRoom: "/root/users",
-        items: [
-            "system-settings.txt"
-        ]
-    }
-];
+// var rooms = [
+//     {
+//         name: "/root",
+//         accessible: true,
+//         nextRooms: [
+//             "/root/applications",
+//             "/root/users"
+//         ],
+//         prevRoom: "/root",
+//         items: [
+//             "README.txt"
+//         ]
+//     },
+//     {
+//         name: "/root/applications",
+//         accessible: true,
+//         nextRooms: [],
+//         prevRoom: "/root",
+//         items: [
+//             "musicplayer.exe",
+//             "chat.exe"
+//         ]
+//     },
+//     {
+//         name: "/root/users",
+//         accessible: true,
+//         nextRooms: [
+//             "/root/users/personal",
+//             "/root/users/admin"
+//         ],
+//         prevRoom: "/root",
+//         items: []
+//     },
+//     {
+//         name: "/root/users/personal",
+//         accessible: true,
+//         nextRooms: [],
+//         prevRoom: "/root/users",
+//         items: [
+//             "image03.jpg",
+//             "image07.jpg",
+//             "image13.jpg",
+//             "image19.jpg",
+//             "penny.jpg",
+//             "database.txt",
+//             "some files are hidden"
+//         ]
+//     },
+//     {
+//         name: "/root/users/admin",
+//         accessible: false,
+//         nextRooms: [],
+//         prevRoom: "/root/users",
+//         items: [
+//             "system-settings.txt"
+//         ]
+//     }
+// ];
 
-var games = [];
+// var games = [];
 /*  structure of games array
     games = [
         gamemanager = {
@@ -181,22 +233,50 @@ io.on('connection', function(socket){
         
         console.log("player chose to host game");
 
-        var player = {
-            username: clientInfo[1].username,
-            password: clientInfo[1].password,
-            playerID: clientInfo[0],
-            room: '/root'
-        }; 
-        var gamemanager = {
-            gameID: generateGameID(),
-            playerNumber: 1,
-            players: [
-                player
-            ]
-        }; 
-        games.push(gamemanager); 
+        // var player = {
+        //     username: clientInfo[1].username,
+        //     password: clientInfo[1].password,
+        //     playerID: clientInfo[0],
+        //     room: '/root'
+        // }; 
+        // var gamemanager = {
+        //     gameID: generateGameID(),
+        //     playerNumber: 1,
+        //     players: [
+        //         player
+        //     ]
+        // }; 
+        // games.push(gamemanager); 
+        let game_ID = generateGameID(); 
+
+        games.findOneAndUpdate({
+            gameID: game_ID
+        }, 'games', function (err, game) {
+            if (err) {
+                res.send(err);
+            } else {
+                if (!game) {
+                    game = new games({
+                        gameID: game_ID,
+                        playerNumber: 1,
+                        players: [{
+                            username: clientInfo[1].username,
+                            password: clientInfo[1].password,
+                            playerID: clientInfo[0],
+                            room: '/room'
+                        }]
+                    });
+
+                    game.save(function (err) {
+                        if (err) console.log(err);
+                        io.emit('hosting new game', [clientInfo[0], game]); 
+                    });
+                } else {
+                    res.send('Game already exists!');
+                }
+            }
+        });
         
-        io.emit('hosting new game', [clientInfo[0], gamemanager]); 
     });
     
     

@@ -53,7 +53,7 @@ $(document).ready(function() {
             ID = serverInfo[0];
             game_ID = serverInfo[1];  
 
-            $('.monitor-text').text('> /root').css('width', '12%');
+            $('.monitor-text').text('> /root ').css('width', '12%');
             $('#player-input-txt').css('width', '78%');  
 
             writeTextFromScript(18, 1); 
@@ -70,7 +70,7 @@ $(document).ready(function() {
     socket.on('starting game', function(serverInfo) {
         if(game_ID == serverInfo[0]) {
             writeInitTextFromServer(serverInfo);
-            $('.monitor-text').text('> /root').css('width', '12%');
+            $('.monitor-text').text('> /root ').css('width', '12%');
             $('#player-input-txt').css('width', '78%');  
 
             gamestate = "running";  
