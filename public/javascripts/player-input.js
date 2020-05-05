@@ -29,21 +29,28 @@ $(document).ready(function() {
             case "init": 
                 if(!username) {
                     
-                    let userFromStorage = JSON.parse(localStorage.getItem("user"));
-                    if(userFromStorage && userFromStorage == input) {
-                        userExists(userFromStorage); 
-                    } else {   
-                        username = input;  
-                        playerInfo.username = username;
-                        localStorage.setItem("user", JSON.stringify(username));  
-                        writeTextFromScript(2, 1); 
-                    }
+                    // let userFromStorage = JSON.parse(localStorage.getItem("user"));
+                    // if(userFromStorage && userFromStorage == input) {
+                    //     userExists(userFromStorage); 
+                    // } else {   
+                    username = input;  
+                    playerInfo.username = username;
+                    socket.emit('check username', [ID, input]); 
+                        // // localStorage.setItem("user", JSON.stringify(username));  
+                        // writeTextFromScript(2, 1); 
+                    // }
                 } else {
                     if(!password) {
+
                         password = input; 
                         playerInfo.password = password; 
-                        console.log("password" + password);
-                        writeTextFromScript(4, 1); 
+
+                        if(!newuser) {
+                            socket.emit('check password', [ID, username, input]); 
+                        } else {   
+                            writeTextFromScript(4, 1); 
+                        }
+
                     } else {
                         if(!host) {
                             if(input == "HOST") {
@@ -78,14 +85,27 @@ $(document).ready(function() {
                 }
                 break;
             case "userexists":
+                // let userFromStorage = JSON.parse(localStorage.getItem("user"));
+                // socket.emit('find player', userFromStorage); 
                 if(input == "Y") {
-                    let userFromStorage = JSON.parse(localStorage.getItem("user"));
-                    socket.emit('find player', userFromStorage); 
+
+                    username = null;  
+                    playerInfo.username = username;
+                    password = null; 
+                    playerInfo.password = password;
+                    gamestate = 'init'; 
+                    writeTextFromScript(1, 1);
+
                 } else if(input == "N") {
-                    writeCommandFromServer(["CHOOSE A DIFFERENT USERNAME"]); 
-                    startGame(); 
-                }  else {
-                    writeCommandFromServer(["SORRY I DIDN'T GET THAT", "CONTINUE GAME? [Y]/[N]"]); 
+
+                    password = null; 
+                    playerInfo.password = password;
+                    gamestate = 'init';
+                    writeTextFromScript(2, 1);
+
+                } else {
+
+                    writeCommandFromServer(["SORRY, I DIDN'T GET THAT", "DO YOU WANT TO CREATE A NEW USERNAME? [Y]/[N]"]);
                 }
                 break;
             case "running":  
@@ -113,7 +133,7 @@ $(document).ready(function() {
 
 
     function userExists(user) {
-        writeCommandFromServer(["USER EXISTS", "CONTINUE GAME? [Y]/[N]"]); 
+        writeCommandFromServer(["USER EXISTS", "TO CONTINUE GAME ENTER PASSWORD"]); 
         gamestate = "userexists"; 
     }
 

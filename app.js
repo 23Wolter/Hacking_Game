@@ -4,7 +4,9 @@ var http = require('http').createServer(app);
 // const http = require('http');
 const io = require('socket.io')(http); 
 const path = require('path');
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
+
+const databasesetup = require('./server_scripts/databasesetup'); 
 
 const port = process.env.PORT || 3000
 
@@ -30,54 +32,29 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 // URL of mLab mongo database 
-var mongoDB = 'mongodb://olini16:StarWars070694@ds161112.mlab.com:61112/hacking-game';
-
-var options = {
-    useMongoClient: true
-};
+var mongoDB = 'mongodb://olini16:hacking-game2020@ds161112.mlab.com:61112/hacking-game';
+// var mongoDB = 'mongodb://localhost/test'; 
 
 // connect to mongodb 
-mongoose.connect(mongoDB, options);
-mongoose.Promise = global.Promise;
+mongoose.connect(mongoDB, { 
+    useNewUrlParser: true,
+    useUnifiedTopology: true 
+});
+// mongoose.Promise = global.Promise;
 var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
-// create schema - the structure of the database 
-var Schema = mongoose.Schema; 
+// schemas
+var Room, Game, Player;
 
-// schema for rooms in the game
-var roomSchema = new Schema({
-	name: String, 
-    accessible: Boolean,
-    nextRooms: { type: Array, default: []},
-    prevRoom: String,
-    items: { type: Array, default: []}
-},{usePushEach: true}); 
-
-var rooms = mongoose.model('rooms', roomSchema);
-
-
-// schema for games
-var gamesSchema = new Schema({
-	gameID: String, 
-    playerNumber: Number,
-    players: [{
-        player: {
-            username: String,
-            password: String, 
-            playerID: String,
-            room: String,
-            opponent: String,
-            opponentPassword: String,
-            hiddenFiles: Boolean,
-            killcode: { type: Array, default: [
-                false, false, false, false, false
-            ]}
-        }
-    }]
-},{usePushEach: true}); 
-
-var games = mongoose.model('games', gamesSchema);
-
+db.once('open', function() {
+    console.log("YES!");
+    
+    Game = databasesetup.initGameSchema(); 
+    Room = databasesetup.initRoomSchema();
+    Player = databasesetup.initPlayerchema();  
+    
+});
 
 
 
@@ -93,64 +70,7 @@ var commands = {
     command2: "GOTO",
     command3: "OPEN"
 };
-// var rooms = [
-//     {
-//         name: "/root",
-//         accessible: true,
-//         nextRooms: [
-//             "/root/applications",
-//             "/root/users"
-//         ],
-//         prevRoom: "/root",
-//         items: [
-//             "README.txt"
-//         ]
-//     },
-//     {
-//         name: "/root/applications",
-//         accessible: true,
-//         nextRooms: [],
-//         prevRoom: "/root",
-//         items: [
-//             "musicplayer.exe",
-//             "chat.exe"
-//         ]
-//     },
-//     {
-//         name: "/root/users",
-//         accessible: true,
-//         nextRooms: [
-//             "/root/users/personal",
-//             "/root/users/admin"
-//         ],
-//         prevRoom: "/root",
-//         items: []
-//     },
-//     {
-//         name: "/root/users/personal",
-//         accessible: true,
-//         nextRooms: [],
-//         prevRoom: "/root/users",
-//         items: [
-//             "image03.jpg",
-//             "image07.jpg",
-//             "image13.jpg",
-//             "image19.jpg",
-//             "penny.jpg",
-//             "database.txt",
-//             "some files are hidden"
-//         ]
-//     },
-//     {
-//         name: "/root/users/admin",
-//         accessible: false,
-//         nextRooms: [],
-//         prevRoom: "/root/users",
-//         items: [
-//             "system-settings.txt"
-//         ]
-//     }
-// ];
+
 
 // var games = [];
 /*  structure of games array
@@ -209,6 +129,7 @@ app.get('/', function(req, res){
 // ON SOCKET CONNECTION
 io.on('connection', function(socket){
     
+    // databasesetup.initRooms(); 
 //    gamemanager.playerNumber++; 
 //    console.log('Player ' + gamemanager.playerNumber +' joined the game');
     
@@ -218,7 +139,7 @@ io.on('connection', function(socket){
     //when a new client connects to the server, print welcome message
     console.log("user connection - welcome: ", socket.id);
     console.log("current sockets: ", sockets); 
-    console.log("current games online: ", games); 
+    console.log("current games online: ", Game); 
     
     console.log("welcome"); 
     
@@ -226,7 +147,41 @@ io.on('connection', function(socket){
     
     io.emit('welcome', socket.id); 
     
+
+
+    socket.on('check username', function(clientInfo) {
+
+        let socket_ID = clientInfo[0]; 
+        let username = clientInfo[1]; 
+
+        Player.find({'username': username}, function(err, playerfound) {
+            if(err) console.error(err);
+            playerfound = playerfound[0]; 
+
+            console.log("user found: " + playerfound); 
+
+            io.emit('user check', [socket_ID, playerfound]); 
+        }); 
+    }); 
+
+
+    socket.on('check password', function(clientInfo) {
+
+        let socket_ID = clientInfo[0]; 
+        let username = clientInfo[1];
+        let password = clientInfo[2];
+
+        Player.find({'username': username, 'password': password}, function(err, playerfound) {
+            if(err) console.error(err); 
+            playerfound = playerfound[0]; 
+
+            console.log("password found: " + playerfound); 
+
+            io.emit('pass check', [socket_ID, playerfound]); 
+        }); 
+    }); 
     
+
     
     //if the client wish to host a new game
     socket.on('host game', function(clientInfo) {
@@ -247,66 +202,85 @@ io.on('connection', function(socket){
         //     ]
         // }; 
         // games.push(gamemanager); 
-        let game_ID = generateGameID(); 
+        generateGameID(function(newGameID) {
 
-        games.findOneAndUpdate({
-            gameID: game_ID
-        }, 'games', function (err, game) {
-            if (err) {
-                res.send(err);
-            } else {
-                if (!game) {
-                    game = new games({
-                        gameID: game_ID,
-                        playerNumber: 1,
-                        players: [{
-                            username: clientInfo[1].username,
-                            password: clientInfo[1].password,
-                            playerID: clientInfo[0],
-                            room: '/room'
-                        }]
-                    });
+            let newgame = new Game({
+                gameID: newGameID, 
+                playerNumber: 1,
+                players: [
+                    // username: clientInfo[1].username,
+                    // password: clientInfo[1].password, 
+                    clientInfo[0]
+                    // room: '/root'
+                ]
+            });
+            
+            console.log("newgame created: ", newgame); 
+            
+            newgame.save(function (err) {
+                if (err) console.error(err);
 
-                    game.save(function (err) {
-                        if (err) console.log(err);
-                        io.emit('hosting new game', [clientInfo[0], game]); 
-                    });
-                } else {
-                    res.send('Game already exists!');
-                }
-            }
-        });
-        
+                let newplayer = new Player({
+                    playerID: clientInfo[0],
+                    username: clientInfo[1].username,
+                    password: clientInfo[1].password,
+                    room: '/root'
+                }); 
+
+                newplayer.save(function(err) {
+                    if(err) console.error(err); 
+
+                    console.log("new player saved, now starting game"); 
+                    io.emit('hosting new game', [clientInfo[0], newgame]); 
+                });
+
+            });
+        }); 
     });
     
     
     //if the client wish to join an existing game
     socket.on('join game', function(clientInfo) {
         
-        var gameID = clientInfo[0]; 
+        let gameID = clientInfo[0]; 
+        let player_ID = clientInfo[2]; 
         console.log("GAME ID FROM CLIENT: " + gameID); 
         
-        var game = getGame(gameID);
-        console.log("GAME FOUND WITH GAME ID: ", game); 
-        
-        if(game) {
-            var player = {
-                username: clientInfo[1].username,
-                password: clientInfo[1].password,
-                playerID: clientInfo[2],
-                room: '/root'
-            }; 
+        let newplayer = new Player({
+            playerID: player_ID,
+            username: clientInfo[1].username,
+            password: clientInfo[1].password,
+            room: '/root'
+        }); 
 
-            updateGame(game[1], player); 
-            console.log("GAMES IS UPDATED: ", games); 
-            
-            io.emit('joining game', game[0]); 
-        } else {
-            io.emit('no game found', clientInfo[2]); 
-        }
+        Game.findOneAndUpdate({ 'gameID': gameID }, {
+            $push: { players: player_ID },
+            $inc: { playerNumber: 1 }
+        }, { 
+            new: true,
+            useFindAndModify: false
+         }, function(err, updatedgame) {
+            if(err) console.error(err); 
+
+            if(updatedgame) {
+                updatedgame.save(function(err) {
+                    if(err) console.error(err); 
+
+                    newplayer.save(function(err) {
+                        if(err) console.error(err); 
+  
+                        io.emit('joining game', updatedgame); 
+                    }); 
+                });
+            } else {
+                io.emit('no game found', player_ID); 
+            }
+        });
     }); 
+    
 
-
+    //CODE TO DO...
+    // WHEN USER LOGS IN 
     socket.on('find player', function(clientInfo) {
 
         console.log("player: " + clientInfo); 
@@ -338,62 +312,28 @@ io.on('connection', function(socket){
 
         console.log("START GAME"); 
         let game_ID = clientInfo[0]; 
-        let player_ID = clientInfo[1];
+        // let players = []; 
+        // let player_ID = clientInfo[1];
 
-        let curGame = getGame(game_ID);
-        let curGameIndex = curGame[1]; 
-        curGame = curGame[0];  
-        console.log("CURRENT GAME: ", curGame); 
-
-        // find the current player
-        // update players opponent to be the next player in the list
-        // if current player is the last, then opponent is the first in the list
-        for(let i=0; i<curGame.players.length; i++) {
-
-            curGame.players[i].opponent = (i == curGame.players.length-1) ? curGame.players[0].username : curGame.players[i+1].username;
-            curGame.players[i].opponentPassword = (i == curGame.players.length-1) ? curGame.players[0].password : curGame.players[i+1].password;
-
-            // set player authorization to false
-            curGame.players[i].hiddenFiles = false;
-            curGame.players[i].killcode = [false, false, false, false, false];    
-        }
-
-        // update the game with the player with opponent
-        games[curGameIndex] = curGame; 
+        // let curGame = getGame(game_ID);
+        // let curGameIndex = curGame[1]; 
+        // curGame = curGame[0];  
         
-        console.log("GAME UPDATED: ", games[curGameIndex]); 
 
-        var txts1 = [
-            // "BOOT UP COMPLETE",
-            "ACCESSING SYSTEM...",
-            "HELLO [NAME] HOW ARE YOU",
-            "WOULD Y@U *! L?K3 T0 *£..$..",
-            "...¤¤¤..@..?...*#..!........."
-        ];
+        // find the relevant game, which contains players 
+        Game.find({'gameID': game_ID}, function(err, gamefound) {
+            if(err) console.error(err);
+            gamefound = gamefound[0]; 
 
-        var txts2 = [
-            " ",
-            "!!! ...WARNING... !!!",
-            "A HOSTILE ENTITY IS TRYING TO ACCESS YOUR SYSTEM...",
-            "!!! ...WARNING... !!!",
-            "FIND THE KILLCODE FOR THE HOSTILE SYSTEM",
-            "LOOK THROUGH THE FILES IN THE HOSTILE SYSTEM",
-            "THE KILLCODE WILL SHUT DOWN THE HOSTILE SYSTEM...",
-            "...FIND IT BEFORE THEY FIND YOURS...",
-            "..........",
-            "HACKING HOSTILE SYSTEM... INITIATED",
-            "..........",
-            "HACKING COMPLETED SUCCESSFULLY!",
-            "ACCESS GRANTED..."
-        ]; 
+            console.log("game found: " + gamefound); 
+            console.log("BEFORE LOOP"); 
 
-        var txts3 = [
-            " ",
-            "HELLO [OPPONENT] HOW ARE YOU",
-            "FOR HELP NAVIGATING THE SYSTEM TYPE 'HELP'",
-        ]; 
-
-        io.emit('starting game', [game_ID, txts1, txts2, txts3, curGame]); 
+            
+            let players = [];
+            setPlayerOpponents(gamefound, 0, players, game_ID); 
+            
+           
+        }); 
     }); 
 
     
@@ -417,32 +357,74 @@ io.on('connection', function(socket){
     
         switch(command) {
             case commands.command0: 
-                output = commandHelp();
+                commandHelp(player_ID, function(output, currentRoom) {
+                    io.emit('player command', [output, game_ID, player_ID, currentRoom]);
+                });
                 break; 
             case commands.command1:
-                output = commandList(game_ID, player_ID); 
+                commandList(game_ID, player_ID, function(output, currentRoom) {
+                    // getGame(game_ID, function(currentGame) {
+
+                        console.log("CURRENT GAME - command: ", currentRoom); 
+                        // let player = getPlayer()
+                        console.log("output: " + output); 
+                        //emit action based on player command to client
+                        io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
+                    // }); 
+                }); 
                 break; 
             case commands.command2:
-                output = commandGoto(game_ID, player_ID, parameter); 
+                commandGoto(game_ID, player_ID, parameter, function(output, currentRoom) {
+                    // getGame(game_ID, function(currentGame) {
+
+                        console.log("CURRENT GAME - command: ", currentRoom); 
+                        // let currentRoom = getPlayerRoom(currentGame, player_ID); 
+                        console.log("output: " + output); 
+                        //emit action based on player command to client
+                        io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
+                    // }); 
+                }); 
                 break; 
             case commands.command3:
-                output = commandOpen(game_ID, player_ID, parameter); 
+                commandOpen(game_ID, player_ID, parameter, function(output, currentRoom) {
+                    // getGame(game_ID, function(currentGame) {
+
+                        console.log("CURRENT GAME - command: ", currentRoom); 
+                        // let currentRoom = getPlayerRoom(currentGame, player_ID); 
+                        console.log("output: " + output); 
+                        //emit action based on player command to client
+                        io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
+                    // }); 
+                }); 
                 break;
             case "SHOW":
-                output = commandShow(game_ID, player_ID, parameter);  
+                commandShow(game_ID, player_ID, parameter, function(output, currentRoom) {
+                    // getGame(game_ID, function(currentGame) {
+
+                        console.log("CURRENT GAME - command: ", currentRoom); 
+                        // let currentRoom = getPlayerRoom(currentGame, player_ID); 
+                        console.log("output: " + output); 
+                        //emit action based on player command to client
+                        io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
+                    // }); 
+                });  
                 break; 
             case "KILL": 
                 console.log("player entered KILL"); 
-                output = commandKillcode(game_ID, player_ID, parameter); 
+                commandKillcode(game_ID, player_ID, parameter, function(output, currentRoom) {
+                    // getGame(game_ID, function(currentGame) {
+
+                        console.log("CURRENT GAME - command: ", currentRoom); 
+                        // let currentRoom = getPlayerRoom(currentGame, player_ID); 
+                        console.log("output: " + output); 
+                        //emit action based on player command to client
+                        io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
+                    // });
+                }); 
                 break; 
         }
         
-        let currentGame = getGame(game_ID); 
-        console.log("CURRENT GAME: ", currentGame); 
-        let currentRoom = getPlayerRoom(currentGame[0], player_ID); 
         
-        //emit action based on player command to client
-        io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
     }); 
     
     //on incomming signal from client
@@ -452,16 +434,17 @@ io.on('connection', function(socket){
         let game_ID = clientInfo[1]; 
         let player_ID = clientInfo[2];
     
-        let game = getGame(game_ID); 
-        let player = getPlayer(game[0], player_ID); 
-    
-        let authorized; 
-    
-        // password is image numbers in the correct geographical order from west to east
-        if(input == player.opponentPassword) authorized = true; 
-        else authorized = false;
-    
-        io.emit('authorized', [authorized, game_ID, player_ID]);
+        getPlayer(player_ID, function(playerfound) {
+            // let player = getPlayer(gamefound[0], player_ID); 
+        
+            let authorized; 
+        
+            console.log("authorizing: " + input + " == " + playerfound.opponentPassword); 
+            if(input == playerfound.opponentPassword) authorized = true; 
+            else authorized = false;
+        
+            io.emit('authorized', [authorized, game_ID, player_ID]);
+        }); 
     }); 
 
 
@@ -471,11 +454,11 @@ io.on('connection', function(socket){
         let game_ID = clientInfo[1];
         let player_ID = clientInfo[2];
 
-        let game = getGame(game_ID);
-        let player = getPlayer(game[0], player_ID);
-
-        io.emit('receivemessage', [input, game_ID, player_ID, player.username]); 
-
+        getPlayer(player_ID, function(playerfound) {
+            // let player = getPlayer(gamefound[0], player_ID);
+            
+            io.emit('receivemessage', [input, game_ID, player_ID, playerfound.username]);  
+        });
     });
 
 
@@ -489,43 +472,46 @@ io.on('connection', function(socket){
         console.log("kill system - player input: " + input); 
         console.log("phase: " + phase); 
 
-        let game = getGame(game_ID); 
-        let player = getPlayer(game[0], player_ID); 
+        getPlayer(player_ID, function(playerfound) { 
+            // let player = getPlayer(gamefound[0], player_ID); 
 
+            switch(phase) {
+                case 0: 
+                    if(input == playerfound.opponent) {
+                        playerfound.killcode[phase] = true;
+                    } 
+                    break; 
+                case 1: 
+                    if(input == playerfound.opponentPassword) {
+                        playerfound.killcode[phase] = true;
+                    } 
+                    break;
+                case 2: 
+                    if(input.toLowerCase() == "penny") {
+                        playerfound.killcode[phase] = true;
+                    } 
+                    break;
+                case 3: 
+                    if(input.toLowerCase() == "nevermind") {
+                        playerfound.killcode[phase] = true;
+                    } 
+                    break;
+                case 4: 
+                    if(input == "19031307") {
+                        playerfound.killcode[phase] = true;
+                    } 
+                    break;
+            }
 
-        switch(phase) {
-            case 0: 
-                if(input == player.opponent) {
-                    player.killcode[phase] = true;
-                } 
-                break; 
-            case 1: 
-                if(input == player.opponentPassword) {
-                    player.killcode[phase] = true;
-                } 
-                break;
-            case 2: 
-                if(input.toLowerCase() == "penny") {
-                    player.killcode[phase] = true;
-                } 
-                break;
-            case 3: 
-                if(input.toLowerCase() == "nevermind") {
-                    player.killcode[phase] = true;
-                } 
-                break;
-            case 4: 
-                if(input == "19031307") {
-                    player.killcode[phase] = true;
-                } 
-                break;
-        }
-
-        let currentGame = getGame(game_ID); 
-        let currentRoom = getPlayerRoom(currentGame[0], player_ID);
-
-        io.emit('systemshutdown', [player.killcode, game_ID, player_ID, currentRoom, player.username]); 
-
+            playerfound.save(function(err) {
+                if(err) console.error(err); 
+                
+                // let currentGame = getGame(game_ID); 
+                let currentRoom = playerfound.room; 
+                
+                io.emit('systemshutdown', [playerfound.killcode, game_ID, player_ID, currentRoom, playerfound.username]); 
+            });
+        });
     });
 
     socket.on('finished', function(clientInfo) {
@@ -534,11 +520,12 @@ io.on('connection', function(socket){
         let game_ID = clientInfo[1];
         let player_ID = clientInfo[2];
 
-        let game = getGame(game_ID);
-        let player = getPlayer(game[0], player_ID);
+        getPlayer(player_ID, function(playerfound) {
 
-        io.emit('end game', [input, game_ID, player_ID, player.username, player.opponent]); 
-
+            // let player = getPlayer(gamefound[0], player_ID);
+            
+            io.emit('end game', [input, game_ID, player_ID, playerfound.username, playerfound.opponent]);  
+        });
     });
     
     //when a user disconnects 
@@ -552,236 +539,570 @@ io.on('connection', function(socket){
 }); 
 
 
+
+function setPlayerOpponents(gamefound, index, players, game_ID) {
+
+    if(index == gamefound.players.length) beginGame(game_ID, players); 
+    else {
+
+        // let players = []; 
+        // for(var i=0; i<gamefound.players.length; i++) {
+        let i = index; 
+        
+        let promise = new Promise(function(resolve, reject) {
+            // executor (the producing code, "singer")
+        
+
+            // loop through each player in the game
+            // for(let i=0; i<gamefound.players.length; i++) {
+            let player_ID = gamefound.players[i]; 
+            console.log("playerID: " + player_ID);
+
+            
+            // do some updates to the player, then jump to next iteration 
+            Player.find({'playerID': player_ID}, function(err, playerfound) {
+                if(err) console.error(err); 
+                playerfound = playerfound[0]; 
+
+                // players.push(playerfound); 
+                console.log("player found: " + playerfound); 
+                
+                let opponent_ID = (i == gamefound.players.length-1) ? gamefound.players[0] : gamefound.players[i+1]; 
+                console.log("opponentID: " + opponent_ID); 
+                
+                Player.find({'playerID': opponent_ID}, function(err, opponentfound) {
+                    if(err) console.error(err); 
+                    if(!opponentfound[0]) reject("No player found!"); 
+                    opponentfound = opponentfound[0];
+                    console.log("opponent found: " + opponentfound);  
+                    
+                    playerfound.opponent = opponentfound.username; 
+                    playerfound.opponentPassword = opponentfound.password; 
+                    playerfound.hiddenFiles = false; 
+                    
+                    playerfound.save(function(err) {
+                        if(err) console.error(err); 
+                        console.log("player saved: " + playerfound);
+                        players.push(playerfound); 
+
+                        resolve(players); 
+                    });
+                }); 
+
+                // playerfound[0].opponent = (i == gamefound.players.length-1) ? playerfound[0].username : gamefound.players[i+1].username;
+                // gamefound.players[i].opponentPassword = (i == gamefound.players.length-1) ? gamefound.players[0].password : gamefound.players[i+1].password;
+                
+                // // set player authorization to false
+                // gamefound.players[i].hiddenFiles = false;
+                // // gamefound.players[i].killcode = [false, false, false, false, false];    
+
+            });
+        
+        // }
+        });
+        
+        promise.then(
+            result => {
+                i++;
+                setPlayerOpponents(gamefound, i, result, game_ID); 
+                return players; 
+            },
+            error => {
+                console.log(error); 
+            }
+        ); 
+            // }   
+    }
+}
+
+
+function beginGame(game_ID, players) {
+    console.log("AFTER LOOP"); 
+
+
+    var txts1 = [
+        // "BOOT UP COMPLETE",
+        "ACCESSING SYSTEM...",
+        "HELLO [NAME] HOW ARE YOU",
+        "WOULD Y@U *! L?K3 T0 *£..$..",
+        "...¤¤¤..@..?...*#..!........."
+    ];
+    
+    var txts2 = [
+        " ",
+        "!!! ...WARNING... !!!",
+        "A HOSTILE ENTITY IS TRYING TO ACCESS YOUR SYSTEM...",
+        "!!! ...WARNING... !!!",
+        "FIND THE KILLCODE FOR THE HOSTILE SYSTEM",
+        "LOOK THROUGH THE FILES IN THE HOSTILE SYSTEM",
+        "THE KILLCODE WILL SHUT DOWN THE HOSTILE SYSTEM...",
+        "...FIND IT BEFORE THEY FIND YOURS...",
+        "..........",
+        "HACKING HOSTILE SYSTEM... INITIATED",
+        "..........",
+        "HACKING COMPLETED SUCCESSFULLY!",
+        "ACCESS GRANTED..."
+    ]; 
+    
+    var txts3 = [
+        " ",
+        "HELLO [OPPONENT] HOW ARE YOU",
+        "FOR HELP NAVIGATING THE SYSTEM TYPE 'HELP'",
+    ]; 
+    
+    io.emit('starting game', [game_ID, txts1, txts2, txts3, players]); 
+
+    // });
+}
+
     
 
 // GENERATE A RANDOM UNIQUE GAME ID
-function generateGameID() {
+function generateGameID(saveNewGame) {
     
     var newGameID = ""; 
     var existingGameID = ""; 
     var duplicates = true; 
     
-    while(duplicates) {
+    Game.find(function(err, gamesfound) {
+        if(err) {
+            console.error(err);
+            return null; 
+        } 
         
-        newGameID = Math.floor(Math.random() * 10000);
-        
-        for(let i=0; i<games.length; i++) {
-            existingGameID = games[i].gamemanager.gameID; 
-            if(existingGameID == newGameID) {
-                break; 
+        console.log("gamesfound: " + gamesfound); 
+
+        while(duplicates) {
+            
+            newGameID = Math.floor(Math.random() * 10000);
+            let duplicateFound = false; 
+
+            for(let i=0; i<gamesfound.length; i++) {
+                existingGameID = gamesfound[i].gameID; 
+                if(existingGameID == newGameID) {
+                    duplicateFound = true; 
+                    break; 
+                }
             }
+
+            if(!duplicateFound) duplicates = false; 
         }
-        duplicates = false; 
-    }
-    return newGameID; 
+        saveNewGame(newGameID);  
+    });
 } 
     
     
 // returns a specific game object + the index of the game
 // based on the game ID in the parameter 
-function getGame(ID) {
+function getGame(ID, foundGame) {
     
-    for(let i=0; i<games.length; i++) {
-        if(games[i].gameID == ID) {
-            return [games[i], i]; 
-        }
-    }
+    Game.find({'gameID': ID}, function(err, gamefound) {
+        if(err) console.error(err);
 
-    return null; 
+        gamefound = gamefound[0];
+        
+        foundGame(gamefound); 
+    }); 
 }
 
-
-// update a game by adding a player to the game defined by the index in the parameter
-function updateGame(index, player) {
-    
-    games[index].players.push(player);
-    games[index].playerNumber++;  
-}
     
 
 // returns the player based on the ID
-function getPlayer(game, player_ID) {
-    for(let i=0; i<game.players.length; i++) {
-        if(game.players[i].playerID == player_ID) {
-            return game.players[i]; 
-        }
-    }
+function getPlayer(player_ID, foundPlayer) {
+
+    Player.find({'playerID': player_ID}, function(err, playerfound) {
+        if(err) console.error(err);
+        playerfound = playerfound[0]; 
+
+        foundPlayer(playerfound); 
+    }); 
 } 
     
 
-// returns the room of a player in a specific game 
-function getPlayerRoom(game, player_ID) {
-
-    console.log("GETPLAYERROOM - Game: ", game); 
-
-    for(let i=0; i<game.players.length; i++) {
-        if(game.players[i].playerID == player_ID) {
-            return game.players[i].room; 
-        }
-    }
-
-    return null; 
-}
-
-
 // THESE FUNCTIONS SHOULD BE MOVED TO THEIR OWN FILES
-function commandHelp() {
-    return ['Here is a list of commands:',
-            '----------------------',
-            '| - - - command - - -|  - - function - - |',
-            '| ' + commands.command1 + ' - - - - - - - | list content of folder |',
-            '| ' + commands.command2 + ' [folder name] | move to folder |',
-            '| ' + commands.command2 + ' [..] - - - - -| go back |',
-            '| ' + commands.command3 + ' [file name] - | open/run file |',
-            '----------------------'
-            ];
+function commandHelp(player_ID, executeCommand) {
+
+    getPlayer(player_ID, function(playerfound) {
+        let currentRoom = playerfound.room;
+
+        let output = ['Here is a list of commands:',
+                    '----------------------',
+                    '| - - - command - - -|  - - function - - |',
+                    '| ' + commands.command1 + ' - - - - - - - | list content of folder |',
+                    '| ' + commands.command2 + ' [folder name] | move to folder |',
+                    '| ' + commands.command2 + ' [..] - - - - -| go back |',
+                    '| ' + commands.command3 + ' [file name] - | open/run file |',
+                    '----------------------'
+        ];
+
+        executeCommand(output, currentRoom);
+    }); 
+
+    return 
 }
 
-function commandGoto(game_ID, player_ID, parameter) {
+function commandGoto(game_ID, player_ID, parameter, executeCommand) {
 
-    var currentGameInfo = getCurrentGameInfo(game_ID, player_ID); 
-    console.log("CURRENT GAME INFO: ", currentGameInfo); 
-    var currentGame = currentGameInfo[0];
-    console.log("CURRENT GAME: ", currentGame); 
-    var currentPlayer = currentGameInfo[2];
-    console.log("CURRENT PLAYER: ", currentPlayer); 
-    var currentRoom = currentPlayer.room;
-    
-    var newRoom = null;
-    
-    // if user typed ".." then go back to previous room 
-    if(parameter == "..") {
-        for(let i=0; i<rooms.length; i++) {
-            if(currentRoom == rooms[i].name) {
-                
-                let preRoom = rooms[i].prevRoom;  
-                
-                if(preRoom) newRoom = rooms[i].prevRoom; 
-            }
-        }
-    } else {
-    
-        var roomToGo = parameter.toLowerCase();
-        
-        if(roomToGo == "admin" && currentRoom == "/root/users") {
-            newRoom = "ENTER PASSWORD";
-        } else if(roomToGo == "auth") {
-            roomToGo = "admin"; 
-        }
+    // var currentGameInfo = getCurrentGameInfo(game_ID, player_ID); 
+    // getGame(game_ID, function(gamefound) {
 
-        roomToGo = currentRoom + "/" + roomToGo; 
-        
-        if(!newRoom) {
-            for(let i=0; i<rooms.length; i++) {
-                if(currentRoom == rooms[i].name) {
-                    for(let j=0; j<rooms[i].nextRooms.length; j++) {
-                        if(roomToGo == rooms[i].nextRooms[j]) {
-                            newRoom = roomToGo; 
-                            break; 
-                        }
-                    }
-                }
-            } 
-        }
-    }
-    
-    if(newRoom) { 
-        if(newRoom != "ENTER PASSWORD") {
+        // console.log("CURRENT GAME INFO: ", currentGameInfo); 
+        // var currentGame = gamefound;
+        // console.log("CURRENT GAME - GOTO: ", currentGame); 
+        getPlayer(player_ID, function(playerfound) {
 
-            currentPlayer.room = newRoom; 
-            currentGame.players[currentGameInfo[3]]; 
-            games[currentGameInfo[1]] = currentGame; 
+            var currentPlayer = playerfound; 
+            console.log("CURRENT PLAYER - GOTO: ", currentPlayer); 
+            var currentRoom = currentPlayer.room;
             
-            newRoom = "CHANGED FOLDER"; 
-        }  
-
-    } else {
-        newRoom = "COULD NOT FIND DIRECTORY"; 
-    }
-    
-    return [newRoom];
-}
-
-function commandList(game_ID, player_ID) {
-
-    var currentGameInfo = getCurrentGameInfo(game_ID, player_ID); 
-    console.log("CURRENT GAME INFO: ", currentGameInfo); 
-    var currentGame = currentGameInfo[0];
-    console.log("CURRENT GAME: ", currentGame); 
-    var currentPlayer = currentGameInfo[2];
-    console.log("CURRENT PLAYER: ", currentPlayer); 
-    var currentRoom = currentPlayer.room;
-
-    var folders = []; 
-    var items = []; 
-
-    for(let i=0; i<rooms.length; i++) {
-
-        if(currentRoom == rooms[i].name) {
-
-            for(let j=0; j<rooms[i].nextRooms.length; j++) {
-                let r = rooms[i].nextRooms[j];
-                r = r.split("/"); 
-                r = r[r.length-1]; 
-                r = "<dir> " + r; 
-                folders[j] = r;   
-            }
-            for(let n=0; n<rooms[i].items.length; n++) {
-                let it = rooms[i].items[n];
+            var newRoom = null;
+            
+            // if user typed ".." then go back to previous room 
+            if(parameter == "..") {
                 
-                if(it == "some files are hidden" && currentPlayer.hiddenFiles) {
+                Room.find({'name': currentRoom}, function(err, roomfound) {
+                    if(err) console.error(err);
+                    console.log("ROOM FOUND [..] - GOTO: " + roomfound); 
+                    newRoom = roomfound[0].prevRoom; 
+                    // if(preRoom) newRoom = preRoom;
+                    
+                    
+                    Player.findOneAndUpdate({ 'playerID': player_ID }, {
+                        room: newRoom 
+                    }, { 
+                        new: true,
+                        useFindAndModify: false
+                    }, function(err, updatedPlayer) {
+                        if(err) console.error(err); 
+                    
+                        if(updatedPlayer) {
+                            updatedPlayer.save(function(err) {
+                                if(err) console.error(err); 
+                                
+                                console.log("success go back"); 
+                                currentRoom = newRoom; 
+                                newRoom = "CHANGED FOLDER";
+                                
+                                executeCommand([newRoom], currentRoom);
+                                return; 
+                            });
+                        }
+                    }); 
+                }); 
+            
+            } else {
+            
+                console.log("user wishes to move to: "); 
+                var roomToGo = parameter.toLowerCase();
+                
+                console.log(roomToGo); 
+                
+                if(roomToGo == "admin" && currentRoom == "/root/users") {
+                    
+                    newRoom = "ENTER PASSWORD";
+                    console.log("success try to go to admin"); 
+                    executeCommand([newRoom], currentRoom);
+                    return; 
+
+                } else if(roomToGo == "auth") {
+                    
+                    console.log("success admin authorized"); 
+                    roomToGo = "admin"; 
+                }
+                
+                roomToGo = currentRoom + "/" + roomToGo; 
+                
+                // console.log("ROOM TO GO: " + roomToGo); 
+
+                
+                console.log("currentroom: " + currentRoom); 
+                console.log("roomtogo: " + roomToGo); 
+            
+            
+            
+                Room.find({ 'name': roomToGo }, function(err, roomfound) {
+                    if(err) console.error(err);
+                    roomfound = roomfound[0]; 
+                    
+                    console.log("roomfound: " + roomfound);
+                    
+                    if(roomfound) {
+                        
+                        newRoom = roomfound.name; 
+                        console.log("room exists: " + newRoom); 
+
+                        console.log("gameID: " + game_ID); 
+                        console.log("playerID: " + player_ID); 
+                        console.log("room: " + newRoom); 
+                        // console.log("currentGame: " + currentGame); 
+                        
+                        Player.findOneAndUpdate({ 'playerID': player_ID }, {
+                            room: newRoom, 
+                        }, { 
+                            new: true,
+                            useFindAndModify: false
+                        }, function(err, updatedPlayer) {
+                            if(err) console.error(err); 
+                            
+                            console.log("found something: " + updatedPlayer); 
+                            
+                            if(updatedPlayer) {
+                                console.log("updated game exists"); 
+                                updatedPlayer.save(function(err) {
+                                    if(err) console.error(err); 
+
+                                    console.log("success update game to wishes room ", updatedPlayer); 
+                                    currentRoom = newRoom; 
+                                    newRoom = "CHANGED FOLDER";
+                                    executeCommand([newRoom], currentRoom);
+                                    return;
+                                });
+                            } else {
+                                console.log("no game found, not updated");
+                                newRoom = "COULD NOT FIND DIRECTORY";
+                                executeCommand([newRoom], currentRoom);
+                                return;
+                            }
+                        }); 
+                        
+                    } else {
+
+                        console.log("no room exists"); 
+                        newRoom = "COULD NOT FIND DIRECTORY";
+                        executeCommand([newRoom], currentRoom);
+                        return;
+                    }
+
+                });
+            
+            }
+        
+        });
+    // }); 
+    
+}
+                
+// let nextRoomIndex = roomfound[0].nextRooms.indexOf(roomToGo); 
+
+                // console.log("ROOM FOUND [..] - GOTO: " + roomToGo);  
+                // newRoom = roomToGo;
+
+
+
+
+
+
+
+            
+    //         if(!newRoom) {
+
+    //             console.log("currentroom: " + currentRoom); 
+    //             console.log("roomtogo: " + roomToGo); 
+
+    //             Room.find({'name': currentRoom, 'nextRooms': roomToGo}, function(err, roomfound) {
+    //                 if(err) console.error(err);
+
+    //                 console.log("hej: " + roomfound[0]);
+    //                 console.log("lol: ", roomfound[0]);
+    //                 console.log(typeof roomfound[0]);
+    //                 console.log(roomfound[0].nextRooms);
+    //                 console.log(typeof roomfound[0].nextRooms);
+                    
+    //                 let nextRoomIndex = roomfound[0].nextRooms.indexOf(roomToGo); 
+    //                 roomToGo = roomfound[0].nextRooms[nextRoomIndex]; 
+
+    //                 console.log("ROOM FOUND [..] - GOTO: " + roomToGo);  
+    //                 newRoom = roomToGo;
+
+
+
+    //                 Game.findOneAndUpdate({ 'gameID': game_ID, 'playerID': player_ID }, {
+    //                     room: newRoom 
+    //                 }, { 
+    //                     new: true,
+    //                     useFindAndModify: false
+    //                  }, function(err, updatedgame) {
+    //                     if(err) console.error(err); 
+            
+    //                     if(updatedgame) {
+    //                         updatedgame.save(function(err) {
+    //                             if(err) console.error(err); 
+    //                             newRoom = "CHANGED FOLDER";
+    //                         });
+    //                     }
+    //                 }); 
+    //             }); 
+    //         } else {
+    //             newRoom = "COULD NOT FIND DIRECTORY"; 
+    //         }
+    //     }
+        
+    //     if(newRoom) { 
+    //         if(newRoom != "ENTER PASSWORD") {
+
+    //             // currentPlayer.room = newRoom; 
+    //             // currentGame.players[currentGameInfo[3]]; 
+    //             // games[currentGameInfo[1]] = currentGame; 
+
+    //             Game.findOneAndUpdate({ 'gameID': game_ID, 'playerID': player_ID }, {
+    //                 room: newRoom 
+    //             }, { 
+    //                 new: true,
+    //                 useFindAndModify: false
+    //              }, function(err, updatedgame) {
+    //                 if(err) console.error(err); 
+        
+    //                 if(updatedgame) {
+    //                     updatedgame.save(function(err) {
+    //                         if(err) console.error(err); 
+    //                         newRoom = "CHANGED FOLDER";
+    //                     });
+    //                 }
+    //             }); 
+    //         }  
+    //     } else {
+    //         newRoom = "COULD NOT FIND DIRECTORY"; 
+    //     }
+        
+    //     executeCommand([newRoom]);
+
+    // });
+// }
+
+function commandList(game_ID, player_ID, executeCommand) {
+
+    // var currentGameInfo = getCurrentGameInfo(game_ID, player_ID); 
+
+    // console.log("CURRENT GAME INFO: ", currentGameInfo); 
+    // getGame(game_ID, function(gamefound) {
+
+            // console.log("CURRENT GAME: ", currentGame); 
+    getPlayer(player_ID, function(playerfound) {
+
+        var currentPlayer = playerfound; 
+        console.log("CURRENT PLAYER - LIST: ", currentPlayer); 
+        var currentRoom = currentPlayer.room;
+        
+        var folders = []; 
+        var items = []; 
+        
+        Room.find({'name': currentRoom}, function(err, roomfound) {
+            if(err) console.error(err);
+            roomfound = roomfound[0]; 
+            
+            for(let i=0; i<roomfound.nextRooms.length; i++) {
+                let r = roomfound.nextRooms[i];
+                    r = r.split("/"); 
+                    r = r[r.length-1]; 
+                    r = "<dir> " + r; 
+                    folders[i] = r;
+                }
+
+                for(let j=0; j<roomfound.items.length; j++) {
+                    let it = roomfound.items[j];
+
+                    if(it == "some files are hidden" && currentPlayer.hiddenFiles) {
                     it = "diary.txt"; 
                 }
-
+                
                 it = "<file> " + it; 
-                items[n] = it; 
+                items[j] = it;
             }
-            break; 
-        }
-    }
 
-    var list = folders.concat(items); 
+            var list = folders.concat(items); 
 
-    return list;
+            console.log("LIST: " + list); 
+            executeCommand(list, currentRoom);
+        });
+    }); 
+        
+        // for(let i=0; i<rooms.length; i++) {
+
+            //     if(currentRoom == rooms[i].name) {
+
+        //         for(let j=0; j<rooms[i].nextRooms.length; j++) {
+            //             let r = rooms[i].nextRooms[j];
+        //             r = r.split("/"); 
+        //             r = r[r.length-1]; 
+        //             r = "<dir> " + r; 
+        //             folders[j] = r;   
+        //         }
+        //         for(let n=0; n<rooms[i].items.length; n++) {
+        //             let it = rooms[i].items[n];
+        
+        //             if(it == "some files are hidden" && currentPlayer.hiddenFiles) {
+        //                 it = "diary.txt"; 
+        //             }
+        
+        //             it = "<file> " + it; 
+        //             items[n] = it; 
+        //         }
+        //         break; 
+        //     }
+        // }
+        
+        
+    // });
 }
 
 
 
-function commandOpen(game_ID, player_ID, parameter) {
+function commandOpen(game_ID, player_ID, parameter, executeCommand) {
 
-    var currentGameInfo = getCurrentGameInfo(game_ID, player_ID);
-    var currentGame = currentGameInfo[0];
-    var currentPlayer = currentGameInfo[2]; 
-    var currentRoom = currentPlayer.room;
+    // var currentGameInfo = getCurrentGameInfo(game_ID, player_ID);
+    // getGame(game_ID, function(gamefound) {
 
-    var file = null; 
+    // var currentGame = gamefound;
+    getPlayer(player_ID, function(playerfound) {
 
-    for(let i=0; i<rooms.length; i++) {
-        if(rooms[i].name == currentRoom) {
+        var currentPlayer = playerfound; 
+        var currentRoom = currentPlayer.room;
+        
+        var file = null; 
+        
+        Room.find({'name': currentRoom}, function(err, roomfound) {
+            if(err) console.error(err);
             
-            for(let j=0; j<rooms[i].items.length; j++) {
-
-                if(rooms[i].items[j].toLowerCase() == parameter.toLowerCase()) {
+            for(let i=0; i<roomfound[0].items.length; i++) {
+                if(roomfound[0].items[i].toLowerCase() == parameter.toLowerCase()) {
                     
-                    file = rooms[i].items[j]; 
-
-                    if(file == "database.txt") {
-                        editFile(file, currentPlayer); 
-                    }
-
+                    file = roomfound[0].items[i];
+                    if(file == "database.txt") { editFile(file, currentPlayer); }
                     break; 
                 }
             }
+            
+            executeCommand([(file) ? "OPENING " + parameter : "NO SUCH FILE"], currentRoom); 
+        });
+        
+    }); 
+        // for(let i=0; i<rooms.length; i++) {
+        //     if(rooms[i].name == currentRoom) {
+                
+        //         for(let j=0; j<rooms[i].items.length; j++) {
 
-            if(parameter.toLowerCase() == "diary.txt") {
-                file = "diary.txt"; 
-            } 
+        //             if(rooms[i].items[j].toLowerCase() == parameter.toLowerCase()) {
+                        
+        //                 file = rooms[i].items[j]; 
 
-            break; 
-        }
-    }
-    
-    return [(file) ? "OPENING " + parameter : "NO SUCH FILE"]; 
+        //                 if(file == "database.txt") {
+        //                     editFile(file, currentPlayer); 
+        //                 }
+
+        //                 break; 
+        //             }
+        //         }
+
+        //         if(parameter.toLowerCase() == "diary.txt") {
+        //             file = "diary.txt"; 
+        //         } 
+
+        //         break; 
+        //     }
+        // }
+        
+         
+    // });
 }
 
 
@@ -818,85 +1139,82 @@ function editFile(file, currentPlayer) {
 
 
 
-function commandShow(game_ID, player_ID, parameter) {
+function commandShow(game_ID, player_ID, parameter, executeCommand) {
 
-    let game = getGame(game_ID);
-    let room = getPlayerRoom(game[0], player_ID);
+    // getGame(game_ID, function(gamefound) {
 
-    console.log("show files - player room " + room); 
-    
-    var output; 
-    if(room == "/root/users/admin") {
-
-        switch(parameter) {
-            case "HIDDEN-FILES": 
-                let gameinfo = getCurrentGameInfo(game_ID, player_ID); 
-                games[gameinfo[1]].players[gameinfo[3]].hiddenFiles = true; 
-                output = "SHOWING " + parameter;
-                break; 
-            default:
-                output = "INPUTERROR > COMMAND NOT FOUND: " + parameter;
-                break;
-        }
-    } else {
-        output = "YOU NEED ADMIN PERMISSION FOR THIS ACTION"; 
-    }
+        // let currentGame = gamefound; 
+    getPlayer(player_ID, function(playerfound) {
+        let currentPlayer = playerfound; 
+        let currentRoom = currentPlayer.room; 
+        // let room = getPlayerRoom(currentGame, player_ID);
         
-    return [output]; 
-}
+        console.log("show files - player room " + currentRoom); 
+        
+        var output; 
+        if(currentRoom == "/root/users/admin") {
+            
+            switch(parameter) {
+                case "HIDDEN-FILES": 
+                // let gameinfo = getCurrentGameInfo(game_ID, player_ID); 
+                // currentPlayer.hiddenFiles = true; 
 
+                Player.findOneAndUpdate({ 'playerID': player_ID }, {
+                    hiddenFiles: true 
+                }, { 
+                    new: true,
+                    useFindAndModify: false
+                    }, function(err, updatedPlayer) {
+                    if(err) console.error(err); 
+        
+                    if(updatedPlayer) {
+                        updatedPlayer.save(function(err) {
+                            if(err) console.error(err); 
 
-function commandKillcode(game_ID, player_ID, parameter) {
+                            output = "SHOWING " + parameter; 
+                        });
+                    }
+                }); 
+                break;
 
-    let game = getGame(game_ID); 
-    let room = getPlayerRoom(game[0], player_ID); 
-
-    console.log("command kill code"); 
-
-    let output = null; 
-    if(room == "/root") {
-        if(parameter == "SYSTEM") {
-            output = "SYSTEM SHUTDOWN";
-            console.log("system: " + output);
+                default:
+                    output = "INPUTERROR > COMMAND NOT FOUND: " + parameter;
+                    break;
+            }
         } else {
-            output = "CANNOT KILL THAT, I CAN ONLY KILL THE SYSTEM"; 
-            console.log("not system: " + output);
+            output = "YOU NEED ADMIN PERMISSION FOR THIS ACTION"; 
         }
-    }
-    
-    console.log("kill system serverside: ", output); 
-
-    return [(output) ? output : "READ THE INSTRUCTIONS MORE CAREFULLY"]; 
-    
+        
+        executeCommand([output], currentRoom); 
+    });
+    // });
 }
 
 
-// returns an array with the following information 
-// [0] = game based on gameID
-// [1] = index of the game 
-// [2] = current player based on playerID
-// [3] = index of the player
-function getCurrentGameInfo(game_ID, player_ID) {
-    
-    let currentGame, currentGameIndex, currentPlayer, currentPlayerInfo; 
-    
-    for(let i=0; i<games.length; i++) {
-        if(games[i].gameID == game_ID) {
-            currentGame = games[i]; 
-            currentGameIndex = i; 
-            break; 
-        }
-    }
-    
-    for(let j=0; j<currentGame.players.length; j++) {
-        if(currentGame.players[j].playerID == player_ID) {
-            currentPlayer = currentGame.players[j]; 
-            currentPlayerIndex = j; 
-            break; 
-        }
-    }
+function commandKillcode(game_ID, player_ID, parameter, executeCommand) {
 
-    var currentGameInfo = [currentGame, currentGameIndex, currentPlayer, currentPlayerIndex];
+    getPlayer(player_ID, function(playerfound) {
 
-    return currentGameInfo; 
+        let currentRoom = playerfound.room; 
+        // let currentGame = gamefound;
+        // let room = getPlayerRoom(currentGame, player_ID); 
+
+        console.log("command kill code"); 
+
+        let output = null; 
+        if(currentRoom == "/root") {
+            if(parameter == "SYSTEM") {
+                output = "SYSTEM SHUTDOWN";
+                console.log("system: " + output);
+            } else {
+                output = "CANNOT KILL THAT, I CAN ONLY KILL THE SYSTEM"; 
+                console.log("not system: " + output);
+            }
+        }
+        
+        console.log("kill system serverside: ", output); 
+
+        executeCommand([(output) ? output : "READ THE INSTRUCTIONS MORE CAREFULLY"], currentRoom); 
+    }); 
+    
 }

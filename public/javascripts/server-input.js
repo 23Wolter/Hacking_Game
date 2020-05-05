@@ -46,25 +46,68 @@ $(document).ready(function() {
         }
     });
 
+    socket.on('user check', function(serverInfo) {
+        console.log(serverInfo); 
+        let socket_ID = serverInfo[0]; 
+        let player = serverInfo[1]; 
+        console.log("ID: " + ID); 
+        console.log("SOCKET ID: " + socket_ID); 
+        if(ID == socket_ID) {
+            console.log("ID match: " + player); 
 
-    socket.on('player found', function(serverInfo) {
-
-        if(serverInfo) {
-            ID = serverInfo[0];
-            game_ID = serverInfo[1];  
-
-            $('.monitor-text').text('> /root ').css('width', '12%');
-            $('#player-input-txt').css('width', '78%');  
-
-            writeTextFromScript(18, 1); 
-
-            gamestate = "running";
-        } else {
-
-            console.log("player not found"); 
-            startGame(); 
+            if(player) {
+                writeCommandFromServer(["USER FOUND!", "ENTER PASSWORD TO CONTINUE:"]);
+                newuser = false; 
+            } else {
+                writeCommandFromServer(["CREATE PASSWORD:"]);
+                newuser = true; 
+            }
         }
     });
+
+    socket.on('pass check', function(serverInfo) {
+        
+        let socket_ID = serverInfo[0]; 
+        let player = serverInfo[1]; 
+
+        if(ID == socket_ID) {
+            if(player) {
+                writeCommandFromServer(["PASSWORD VERYFIED!", "NOW CONTINUING GAME...", "HELLO " + player.opponent + " HOW ARE YOU",
+                "FOR HELP NAVIGATING THE SYSTEM TYPE 'HELP'"]);
+                
+                let room = player.room; 
+                if(room == "/root/users/personal") room = "/root/users/" + player.opponent; 
+
+                $('.monitor-text').text('> ' + room).css('width', (room.length + 3) + 'ch');
+                $('#player-input-txt').css('width', '50%');
+
+                gamestate = "running"; 
+
+            } else {
+                writeCommandFromServer(["INCORRECT PASSWORD", "DO YOU WANT TO CREATE A NEW USERNAME? [Y]/[N]"]);
+                gamestate = "userexists"; 
+            }
+        }
+    })
+
+    // socket.on('player found', function(serverInfo) {
+
+    //     if(serverInfo) {
+    //         ID = serverInfo[0];
+    //         game_ID = serverInfo[1];  
+
+    //         $('.monitor-text').text('> /root ').css('width', '12%');
+    //         $('#player-input-txt').css('width', '78%');  
+
+    //         writeTextFromScript(18, 1); 
+
+    //         gamestate = "running";
+    //     } else {
+
+    //         console.log("player not found"); 
+    //         startGame(); 
+    //     }
+    // });
 
 
     socket.on('starting game', function(serverInfo) {

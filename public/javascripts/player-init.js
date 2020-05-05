@@ -5,6 +5,7 @@ var ID;
 var game_ID; 
 var host = null; 
 var phase = 0; 
+var newuser; 
 
 $(document).ready(function() { 
 

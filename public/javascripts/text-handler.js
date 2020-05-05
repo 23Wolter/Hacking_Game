@@ -118,8 +118,8 @@ function writeInitTextFromServer(textArrays) {
     console.log("TEXT ARRAYS: ", textArrays); 
 
     let username; 
-    for(let n=0; n<textArrays[4].players.length; n++) {
-        let p = textArrays[4].players[n]; 
+    for(let n=0; n<textArrays[4].length; n++) {
+        let p = textArrays[4][n]; 
         if(p.playerID == ID) {
             username = p.username; 
             opponent = p.opponent; 
