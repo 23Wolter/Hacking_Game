@@ -1,32 +1,22 @@
+// this script handles when the server gives a response to the client
 $(document).ready(function() { 
     
-    //if client wish to host a new game 
+    // if client wish to host a new game 
     socket.on('hosting new game', function(serverInfo) {
 
-        console.log("player ID from client: " + ID);
-        console.log("player ID from server: " + serverInfo[0]);
-
         if(ID == serverInfo[0]) {
-            // $('#text_5').text('HOSTING NEW GAME');
-            // $('#text_6').text('GAME ID: ' + serverInfo[1].gameID);
-            // $('#text_7').text('NUMBER OF PLAYERS: ' + serverInfo[1].playerNumber);
-            
+        
             game_ID = serverInfo[1].gameID; 
-
             txts[6] = txts[6] + serverInfo[1].gameID;  
             txts[7] = txts[7] + serverInfo[1].playerNumber; 
-            // movePlayerPrint(7); 
-            // printMessage(5, 3, 0, 50);
             writeTextFromScript(5, 4); 
         }
     });
 
-
+    // if client wish to join a game
     socket.on('joining game', function(game) {
-        console.log("JOINING GAME: ", game); 
 
         game_ID = game.gameID; 
-
         txts[12] = txts[12] + game.playerNumber; 
 
         if(host) {
@@ -37,7 +27,7 @@ $(document).ready(function() {
         gamestate = "ready"; 
     });
 
-
+    // if no game is found with the given game ID 
     socket.on('no game found', function(player_ID) {
         
         if(player_ID == ID) {
@@ -46,12 +36,12 @@ $(document).ready(function() {
         }
     });
 
+    // check if user already exists
     socket.on('user check', function(serverInfo) {
-        console.log(serverInfo); 
+        
         let socket_ID = serverInfo[0]; 
         let player = serverInfo[1]; 
-        console.log("ID: " + ID); 
-        console.log("SOCKET ID: " + socket_ID); 
+        
         if(ID == socket_ID) {
             console.log("ID match: " + player); 
 
@@ -65,6 +55,7 @@ $(document).ready(function() {
         }
     });
 
+    // check if password is correct 
     socket.on('pass check', function(serverInfo) {
         
         let socket_ID = serverInfo[0]; 
@@ -90,26 +81,7 @@ $(document).ready(function() {
         }
     })
 
-    // socket.on('player found', function(serverInfo) {
-
-    //     if(serverInfo) {
-    //         ID = serverInfo[0];
-    //         game_ID = serverInfo[1];  
-
-    //         $('.monitor-text').text('> /root ').css('width', '12%');
-    //         $('#player-input-txt').css('width', '78%');  
-
-    //         writeTextFromScript(18, 1); 
-
-    //         gamestate = "running";
-    //     } else {
-
-    //         console.log("player not found"); 
-    //         startGame(); 
-    //     }
-    // });
-
-
+    // start game 
     socket.on('starting game', function(serverInfo) {
         if(game_ID == serverInfo[0]) {
             writeInitTextFromServer(serverInfo);
@@ -119,7 +91,6 @@ $(document).ready(function() {
             gamestate = "running";  
         }
     }); 
-
 
     // info from server based on player command
     // [0] = command response
@@ -131,11 +102,8 @@ $(document).ready(function() {
         if(game_ID == serverInfo[1] && ID == serverInfo[2]) {
             console.log("serverinfo[0]: " + serverInfo[0]);
             if(serverInfo[0]) {
-
-
                 // if the player inserted a valid command, write it above
                 writeCommandFromServer(serverInfo[0]);
-            
 
                 // check if current room is "personal" - then change to username
                 if(serverInfo[3] == "/root/users/personal") serverInfo[3] = "/root/users/" + opponent; 
@@ -143,10 +111,6 @@ $(document).ready(function() {
                 // set size of text showing the current path (room)
                 $('.monitor-text').text('> ' + serverInfo[3]).css('width', (serverInfo[3].length + 3) + 'ch');
                 $('#player-input-txt').css('width', '50%'); 
-
-                console.log(serverInfo[0]);
-                console.log(serverInfo[0][0]);
-                console.log(serverInfo[0][0].split(" "));
 
                 let command = serverInfo[0][0].split(" ")[0];
                 let param = serverInfo[0][0].split(" ")[1];
@@ -192,6 +156,7 @@ $(document).ready(function() {
         } 
     });
 
+    // if the player wishes to enter admin folder, check if password is correct 
     socket.on('authorized', function(serverInfo) {
         if(game_ID == serverInfo[1] && ID == serverInfo[2]) {
             if(serverInfo[0]) {
@@ -205,18 +170,20 @@ $(document).ready(function() {
         }
     });
 
-
+    // if a player has sent a message in the chatroom 
     socket.on('receivemessage', function(serverInfo) {        
 
+        // for every player in the current game 
         if(game_ID == serverInfo[1]) {
-            
             let input = serverInfo[0];
 
+            // if the player who sent the message types EXIT - close chat 
             if(input == "EXIT" && ID == serverInfo[2]) {
                 
                 writeCommandFromServer(["CLOSING CHAT.EXE"]);
                 gamestate = "running"; 
             
+            // if the client is not the player that sent the message, output the message with a small encryption
             } else if(input != "EXIT" && ID != serverInfo[2]) {
             
                 input = input.replace("A", "@");
@@ -236,6 +203,7 @@ $(document).ready(function() {
 
                 writeCommandFromServer(msg);
             
+            // if the player who sent the message didn't type EXIT
             } else if(input != "EXIT") {
 
                 $('.monitor-text').text('>').css('width', '3ch');
@@ -244,18 +212,19 @@ $(document).ready(function() {
                 writeCommandFromServer(["MESSAGE SENT"]);
             }
         }
-
     });
 
-
+    // if the player initiated the KILL SYSTEM procedure 
     socket.on('systemshutdown', function(serverInfo) {
 
         if(game_ID == serverInfo[1] && ID == serverInfo[2]) {
 
+            // if not the final phase 
             if(phase < 4) {
                 phase++; 
                 console.log("phase: " + phase); 
                 writeKillSystem(phase); 
+            // after the final phase, check if the data entered is correct 
             } else {
                 phase = 0; 
                 writeEndText(serverInfo[0], serverInfo[4]); 
@@ -263,12 +232,13 @@ $(document).ready(function() {
         }        
     });
 
+    // when the game is finished 
     socket.on('end game', function(serverInfo) {
 
+        // if the client is the losing player 
         if(game_ID == serverInfo[1] && ID != serverInfo[2]) {
 
-            // $('#player-interaction').css("visibility", "hidden");
-
+            // stop all music playing 
             $('#intro_track_suspense').animate({volume: 0}, 1000, function () {
                 $('#intro_track_suspense')[0].pause();
                 $('#intro_track_suspense')[0].currentTime = 0;
@@ -297,8 +267,10 @@ $(document).ready(function() {
             $('#computer_glitch').prop("volume", 0.5);
             $('#computer_glitch')[0].play();
 
+            // write message from the winning player 
             writeCommandFromServer(["...¤¤¤..@..?...*#..!.........", "* YOU HAVE BEEN HACKED *", ("incoming message from your hacker, " + serverInfo[3] + ": " + serverInfo[0])]);
 
+            // turn off the monitor 
             setTimeout(function() {
 
                 $('#text-input-field').addClass('_off');
@@ -312,6 +284,7 @@ $(document).ready(function() {
             
             }, 15000);
 
+            // play awwww soung and turn off lights 
             setTimeout(function() {
                 $('#aww')[0].play();
                 
@@ -335,8 +308,10 @@ $(document).ready(function() {
 
             }, 20000);
 
+        // if the client is the winning player 
         } else if(game_ID == serverInfo[1] && ID == serverInfo[2]) {
 
+            // turn off monitor 
             setTimeout(function() {  
                 $('#text-input-field').addClass('_off');
                 $('#tv-off')[0].play();
@@ -347,19 +322,21 @@ $(document).ready(function() {
                 $('#player-interaction').css("visibility", "hidden"); 
             }, 1000);
     
+            // play winning fanfare sound 
             setTimeout(function() {
                 $('#fanfare')[0].play();  
             }, 6000);
         }
     });
 
-
+    // if the player enters the musicplayer 
     function musicplayer() {
 
         gamestate = "musicplayer"; 
         $('.monitor-text').text('>').css('width', '3ch');
         $('#player-input-txt').css('width', '50%');
 
+        // tracks to choose between 
         let tracks = [
             " ",
             "welcome to the musicplayer",
@@ -372,7 +349,7 @@ $(document).ready(function() {
         writeCommandFromServer(tracks);
     }
 
-
+    // if the player enters the chatroom 
     function chatroom() {
 
         gamestate = "chatroom"; 
@@ -389,7 +366,7 @@ $(document).ready(function() {
         writeCommandFromServer(chatWelcome); 
     }
 
-
+    // when a player enters the KILL SYSTEM procedure - stop all music and play suspenseful music 
     function playKillMusic() {
 
         $('#intro_track_suspense').animate({volume: 0}, 1000, function () {

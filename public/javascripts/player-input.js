@@ -1,3 +1,4 @@
+// this script handles when the player inputs something on the client side 
 $(document).ready(function() { 
     
     //hide all text while typewriter animation plays
@@ -18,9 +19,6 @@ $(document).ready(function() {
         if(gamestate != "finished") {
             
             var input = $('#player-input-txt').val().toUpperCase(); 
-            // $input = $('<p>').text(input); 
-            // $('#player-input-print').append($input); 
-            //        $('#player-input-txt').val('').focus();
             writeTextFromClient(input); 
         }
         
@@ -29,22 +27,18 @@ $(document).ready(function() {
             case "init": 
                 if(!username) {
                     
-                    // let userFromStorage = JSON.parse(localStorage.getItem("user"));
-                    // if(userFromStorage && userFromStorage == input) {
-                    //     userExists(userFromStorage); 
-                    // } else {   
+                    // check the username entered
                     username = input;  
                     playerInfo.username = username;
-                    socket.emit('check username', [ID, input]); 
-                        // // localStorage.setItem("user", JSON.stringify(username));  
-                        // writeTextFromScript(2, 1); 
-                    // }
+                    socket.emit('check username', [ID, input]);
+
                 } else {
                     if(!password) {
 
                         password = input; 
                         playerInfo.password = password; 
 
+                        // if player already exists, check password, else create new 
                         if(!newuser) {
                             socket.emit('check password', [ID, username, input]); 
                         } else {   
@@ -53,14 +47,21 @@ $(document).ready(function() {
 
                     } else {
                         if(!host) {
+                            // if player chooses to host 
                             if(input == "HOST") {
+
                                 host = true;
                                 gamestate = "waiting";  
                                 socket.emit('host game', [ID, playerInfo]);
+
+                            // if player chooses to join 
                             } else if(input == "JOIN") {
+
                                 host = false; 
                                 writeTextFromScript(9, 1);   
                                 gamestate = "joining"; 
+
+                            // if player enters incorrect input
                             } else { 
                                 writeTextFromScript(3, 2); 
                             }
@@ -68,25 +69,30 @@ $(document).ready(function() {
                     }
                 }
                 break; 
+
             case "waiting": 
                 writeTextFromScript(8, 1); 
                 break; 
+
             case "joining":
                 socket.emit('join game', [input, playerInfo, ID]);
                 break; 
+
             case "ready":
+                // when players are ready and the host enters START
                 if(input == "START" && host) {
                     gamestate = "starting"; 
                     socket.emit('start game', [game_ID, ID]);
+
                 } else if(host) {
                     writeTextFromScript(13, 2);
                 } else {
                     writeTextFromScript(15, 1);
                 }
                 break;
+
             case "userexists":
-                // let userFromStorage = JSON.parse(localStorage.getItem("user"));
-                // socket.emit('find player', userFromStorage); 
+                // if an existing user wishes to create a new user
                 if(input == "Y") {
 
                     username = null;  
@@ -96,6 +102,7 @@ $(document).ready(function() {
                     gamestate = 'init'; 
                     writeTextFromScript(1, 1);
 
+                // if an existing user wishes to try to enter the password again 
                 } else if(input == "N") {
 
                     password = null; 
@@ -104,25 +111,30 @@ $(document).ready(function() {
                     writeTextFromScript(2, 1);
 
                 } else {
-
                     writeCommandFromServer(["SORRY, I DIDN'T GET THAT", "DO YOU WANT TO CREATE A NEW USERNAME? [Y]/[N]"]);
                 }
                 break;
+
             case "running":  
                 socket.emit('player command', [input, game_ID, ID]); 
                 break; 
+
             case "authorizing":
                 socket.emit('authorizing', [input, game_ID, ID]);
                 break;
+
             case "killsystem": 
                 socket.emit('killsystem', [input, game_ID, ID, phase]);
                 break;
+
             case "musicplayer":
                 playmusic(input);
                 break;
+
             case "chatroom":
                 socket.emit('sendmessage', [input, game_ID, ID]);  
                 break;
+
             case "finished":
                 socket.emit('finished', [input, game_ID, ID]);
                 break;
@@ -131,13 +143,7 @@ $(document).ready(function() {
         }
     });
 
-
-    function userExists(user) {
-        writeCommandFromServer(["USER EXISTS", "TO CONTINUE GAME ENTER PASSWORD"]); 
-        gamestate = "userexists"; 
-    }
-
-
+    // if the player enters the musicplayer, the can choose 1 out of 3 songs to play 
     function playmusic(tracknumber) {
 
         if(tracknumber == "1" || tracknumber == "2" || tracknumber == "3") {
@@ -157,13 +163,11 @@ $(document).ready(function() {
             $('#track' + tracknumber)[0].play(); 
 
         } else {
-            writeCommandFromServer(["UNABLE TO PLAY TRACK"]); 
+            writeCommandFromServer(["UNABLE TO PLAY THAT TRACK"]); 
         }
 
         gamestate = "running"; 
-        
         $('#text-input-field').scrollTop($('#text-input-field')[0].scrollHeight);
-
         socket.emit('player command', ["GOTO ..", game_ID, ID]);
     }
 });

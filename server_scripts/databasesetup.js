@@ -58,6 +58,7 @@ module.exports = {
     },
     
 
+    // initialize the rooms with specific values 
     initRooms: function() {
 
         var root = new Room({
@@ -75,7 +76,6 @@ module.exports = {
         
         root.save(function (err) { if (err) console.error(err); });
 
-        console.log("room root is setup"); 
 
         var applications = new Room({
             name: "/root/applications",
@@ -135,6 +135,7 @@ module.exports = {
         });
         
         admin.save(function (err) { if (err) console.error(err); });
-
+        
+        console.log("all rooms are setup"); 
     }
 }

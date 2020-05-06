@@ -1,5 +1,8 @@
-//open a socket on client side
+// this script initializes the game 
+// open a socket on client side
 var socket = io();
+
+// initiate global client-side variables 
 var gamestate = "";
 var ID;  
 var game_ID; 
@@ -12,6 +15,7 @@ $(document).ready(function() {
     let start = false; 
     let interval; 
 
+    // when the user clicks the center of the screen - start the game  
     $(document.body).click(function() {
 
         if(!start) {
@@ -55,27 +59,12 @@ $(document).ready(function() {
         }
     });
     
-
-    // $('body').css('cursor', 'none');
-
-    // $('#mainTrack')[0].play(); 
-    
-    
-    //when client connects to server, print start message
+    // when client connects - overwrite/update socket ID
     socket.on('welcome', function(socketID) {
-
-        if(!ID) {   
-            ID = socketID; 
-            
-            console.log("user connected - " + ID); 
-            // gamestate = 'init'; 
-            // writeTextFromScript(0, 2);
-        }
-
-        // printMessage(0, 2, 0, 50);
-
+        if(!ID) { ID = socketID; }
     });
     
+    // when player clicks start button, begin game 
     $('#startBtn').click(function() {
 
         $(document.body).unbind();
@@ -84,11 +73,9 @@ $(document).ready(function() {
         clearInterval(interval); 
         $('#startBtn div').css("background-color", "lawngreen");
         
-        // $('#buzz')[0].pause();
         $('#intro_start')[0].play(); 
 
         setTimeout(function() {
-
             setTimeout(function() {
                 $('#intro_start2').prop("volume", 0);
                 $('#intro_start2')[0].play();
@@ -98,14 +85,10 @@ $(document).ready(function() {
             startGame(); 
         }, 15000);
     });
-    
-    
-    //    typewriter(0, 2, 0, 50);
-        
 }); 
 
+// initiate game
 function startGame() {
-    
     gamestate = 'init'; 
     writeTextFromScript(0, 2);
 }

@@ -1,3 +1,5 @@
+// creates the effect of a tv monitor turning off
+
 var $tv = $('.tv')
   ,$screen = $('.screen-content')
   ,$btn = $('.js-shtd-btn')

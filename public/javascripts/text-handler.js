@@ -1,3 +1,5 @@
+// this script handles all the text outputs written on the monitor in the game 
+
 var txts = [
     "BOOTING...",
     "INPUT USERNAME:",
@@ -20,13 +22,12 @@ var txts = [
     "GAME RESUMED..."
 ]; 
 
-
+// write text based on input from the user 
 function writeTextFromScript(index, pieces) {
 
     $('#typing_sound')[0].play();
 
     for(var i=0; i<pieces; i++) {
-
         if($('#text_' + (index + i))) {
             $('#text_' + (index + i)).remove();     
         } 
@@ -42,7 +43,7 @@ function writeTextFromScript(index, pieces) {
     printMessage(index, pieces, 0, 60); 
 }
 
-
+// write text based on input from the client 
 function writeTextFromClient(userTxt) {
 
     $('#typing_sound')[0].play();
@@ -52,13 +53,12 @@ function writeTextFromClient(userTxt) {
     }).text(userTxt); 
     
     $('#write-text').append($txt); 
-
-
-    // printMessage(index, 1, 0, 60); 
 }
 
+// write the initial text shown on game begin 
+// the content of this text is defined in the server 
+// also play relevant sounds and music 
 var opponent; 
-
 function writeInitTextFromServer(textArrays) {
     
     $('#typing_sound')[0].play();
@@ -154,7 +154,7 @@ function writeInitTextFromServer(textArrays) {
     printMessage(starting_index, txtArr.length, 0, 60);  
 }
 
-
+// write each time a player enters a command 
 function writeCommandFromServer(command) {
 
     $('#typing_sound')[0].play(); 
@@ -173,12 +173,9 @@ function writeCommandFromServer(command) {
     }
 
     printMessage(starting_index, command.length, 0, 60); 
-    
-    // //scroll input window to bottom to reveal input field
-    // $('#text-input-field').scrollTop($('#text-input-field')[0].scrollHeight);
 }
 
-
+// if the player enters incorect commands
 function writeErrorMessage() {
 
     let starting_index = $('#write-text div').length; 
@@ -198,10 +195,10 @@ function writeErrorMessage() {
     printMessage(starting_index, 2, 0, 60); 
 }
 
-
+// write the text when the player enters the KILL SYSTEM procedure 
+// new text pieces for each phase (total of 5)
 function writeKillSystem(phase) {
 
-    
     if(phase == 0) {
         let starting_index = $('#write-text div').length; 
 
@@ -308,12 +305,10 @@ function writeKillSystem(phase) {
 
 
         gamestate = "running"; 
-        
     }
-
 }
 
-
+// when the KILL SYSTEM procedure is done - check if the information is correct 
 function writeEndText(playerAnswers, playerUsername) {
     
     let starting_index = $('#write-text div').length; 
@@ -328,6 +323,7 @@ function writeEndText(playerAnswers, playerUsername) {
         class: 'text-output'
     }).text("|.../...-...\\...|.../...-...\\...|.../...-...\\...|.../...-...\\...|").css('color', 'red');
     
+    // if the phase 0 answer is correct 
     if(playerAnswers[0]) {
 
         $txt3 = $('<div>').attr({
@@ -341,6 +337,7 @@ function writeEndText(playerAnswers, playerUsername) {
         }).text("1/5 VERIFY USERNAME: FAIL").css('color', 'red');
     }
 
+    // if phase 1 answer is correct 
     if(playerAnswers[1]) {
 
         $txt4 = $('<div>').attr({
@@ -354,6 +351,7 @@ function writeEndText(playerAnswers, playerUsername) {
         }).text("2/5 CONFIRM PASSWORD: FAIL").css('color', 'red');
     }
 
+    // if phase 2 answer is correct 
     if(playerAnswers[2]) {
         $txt5 = $('<div>').attr({
             id: 'text_' + (starting_index + 4),
@@ -366,6 +364,7 @@ function writeEndText(playerAnswers, playerUsername) {
         }).text("3/5 WHAT IS THE NAME OF YOUR PET: FAIL").css('color', 'red');
     }
 
+    // if phase 3 answer is correct
     if(playerAnswers[3]) {
         $txt6 = $('<div>').attr({
             id: 'text_' + (starting_index + 5),
@@ -378,6 +377,7 @@ function writeEndText(playerAnswers, playerUsername) {
         }).text("4/5 WHAT IS THE BEST CD ALBUM: FAIL").css('color', 'red');
     }
 
+    // if phase 4 answer is correct 
     if(playerAnswers[4]) {
         $txt7 = $('<div>').attr({
             id: 'text_' + (starting_index + 6),
@@ -390,8 +390,7 @@ function writeEndText(playerAnswers, playerUsername) {
         }).text("5/5 KILLCODE: FAIL").css('color', 'red');
     }
 
-
-
+    // if all answers are correct 
     if(playerAnswers[0] && playerAnswers[1] && playerAnswers[2] && playerAnswers[3] && playerAnswers[4]) {
 
         $end = $('<div>').attr({
@@ -414,6 +413,7 @@ function writeEndText(playerAnswers, playerUsername) {
             class: 'text-output'
         }).text("YOU HAVE SUCCESSFULLY HACKED YOUR OPPONENT!").css('color', 'lawngreen');
 
+        // let the player write a message to the opponent 
         $end5 = $('<div>').attr({
             id: 'text_' + (starting_index + 11),
             class: 'text-output'
@@ -438,6 +438,7 @@ function writeEndText(playerAnswers, playerUsername) {
             $('#buzz')[0].play();
         }, 45000);
 
+    // if the player's opponent finishes the kill system procedure, then the current player has lost 
     } else {
         $end = $('<div>').attr({
             id: 'text_' + (starting_index + 7),
@@ -470,5 +471,4 @@ function writeEndText(playerAnswers, playerUsername) {
         $('#write-text').append($txt, $txt2, $txt3, $txt4, $txt5, $txt6, $txt7, $end, $end2, $end3);
         printMessage(starting_index, 10, 0, 60);
     }
-        
 }
