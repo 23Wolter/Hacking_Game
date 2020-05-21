@@ -227,6 +227,7 @@ $(document).ready(function() {
             // after the final phase, check if the data entered is correct 
             } else {
                 phase = 0; 
+                console.log(serverInfo[0]); 
                 writeEndText(serverInfo[0], serverInfo[4]); 
             }
         }        

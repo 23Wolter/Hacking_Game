@@ -261,6 +261,13 @@ io.on('connection', function(socket){
                 commandKillcode(game_ID, player_ID, parameter, function(output, currentRoom) {
                     io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
                 }); 
+                break;
+            default: 
+                getPlayer(player_ID, function(playerfound) {
+                    let currentRoom = playerfound.room;
+                    let output = ["INPUTERROR > COMMAND NOT FOUND: " + parameter];
+                    io.emit('player command', [output, game_ID, player_ID, currentRoom]);
+                });
                 break; 
         }
     }); 
@@ -305,45 +312,68 @@ io.on('connection', function(socket){
         let player_ID = clientInfo[2];
         let phase = clientInfo[3]; 
         
-        console.log("kill system - player input: " + input); 
         console.log("phase: " + phase); 
-
+        console.log("kill system - player input: " + input);
+        
         getPlayer(player_ID, function(playerfound) { 
-
+            
+            console.log(playerfound.opponent);
+            console.log(playerfound.opponentPassword);
+            console.log(input.toLowerCase());
+             
             // there are 5 phases in the kill system procedure - with 5 different passwords
             switch(phase) {
                 case 0: 
                     if(input == playerfound.opponent) {
+                        console.log("true");
                         playerfound.killcode[phase] = true;
                     } 
                     break; 
                 case 1: 
                     if(input == playerfound.opponentPassword) {
+                        console.log("true");
                         playerfound.killcode[phase] = true;
                     } 
                     break;
                 case 2: 
                     if(input.toLowerCase() == "penny") {
+                        console.log("true");
                         playerfound.killcode[phase] = true;
                     } 
                     break;
                 case 3: 
                     if(input.toLowerCase() == "nevermind") {
+                        console.log("true");
                         playerfound.killcode[phase] = true;
                     } 
                     break;
                 case 4: 
                     if(input == "19031307") {
+                        console.log("true");
                         playerfound.killcode[phase] = true;
                     } 
                     break;
             }
 
-            playerfound.save(function(err) {
+            Player.findOneAndUpdate({ 'playerID': player_ID }, {
+                killcode: playerfound.killcode 
+            }, { 
+                new: true,
+                useFindAndModify: false
+            }, function(err, updatedPlayer) {
                 if(err) console.error(err); 
-                let currentRoom = playerfound.room; 
+            
+                if(updatedPlayer) {
+                    updatedPlayer.save(function(err) {
+                        if(err) console.error(err); 
+
+                        let currentRoom = playerfound.room; 
+
+                        console.log(playerfound.killcode); 
                 
-                io.emit('systemshutdown', [playerfound.killcode, game_ID, player_ID, currentRoom, playerfound.username]); 
+                        io.emit('systemshutdown', [playerfound.killcode, game_ID, player_ID, currentRoom, playerfound.username]); 
+                    });
+                }
             });
         });
     });
@@ -694,7 +724,10 @@ function commandOpen(game_ID, player_ID, parameter, executeCommand) {
             
             // look through each items in the current room to find the desired file/item
             for(let i=0; i<roomfound[0].items.length; i++) {
-                if(roomfound[0].items[i].toLowerCase() == parameter.toLowerCase()) {
+
+                if(parameter.toLowerCase() == "diary.txt") {
+                    file = "diary.txt"; 
+                } else if(roomfound[0].items[i].toLowerCase() == parameter.toLowerCase()) {
                     
                     file = roomfound[0].items[i];
 
