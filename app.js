@@ -762,14 +762,14 @@ function editFile(file, currentPlayer) {
 
         let user_start = data.indexOf('<USERNAME>') + 10;
         let user_end = data.indexOf('</USERNAME>');   
-        data.replaceBetween(user_start, user_end, username);
+        data = data.replaceBetween(user_start, user_end, username);
 
         let pass_start = data.indexOf('<PASSWORD>') + 10; 
         let pass_end = data.indexOf('</PASSWORD>'); 
-        data.replaceBetween(pass_start, pass_end, password);
+        data = data.replaceBetween(pass_start, pass_end, password);
         // data = data.replace('[USER]', username);
         // data = data.replace('[PASS]', password);
-    
+
         // write/return the new changed file 
         fs.writeFile('./public/files/' + file, data, 'utf-8', function (err) {
           if (err) throw err;
