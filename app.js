@@ -348,7 +348,7 @@ io.on('connection', function(socket){
                     } 
                     break;
                 case 4: 
-                    if(input == "19031307") {
+                    if(input == "06071994") {
                         console.log("true");
                         playerfound.killcode[phase] = true;
                     } 

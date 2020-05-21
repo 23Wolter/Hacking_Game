@@ -7,30 +7,30 @@
 <CATALOG>
   <CD>
     <PRIORITY>1</PRIORITY>
-    <TITLE>Nevermind</TITLE>
-    <ARTIST>Nirvana</ARTIST>
+    <TITLE>Secret Name</TITLE>
+    <ARTIST>Low</ARTIST>
     <COUNTRY>USA</COUNTRY>
-    <COMPANY>Butch Vig</COMPANY>
+    <COMPANY>Steve Albini</COMPANY>
     <PRICE>9.90</PRICE>
-    <YEAR>1991</YEAR>
+    <YEAR>1999</YEAR>
   </CD>
   <CD>
     <PRIORITY>2</PRIORITY>
-    <TITLE>News of the World</TITLE>
-    <ARTIST>Queen</ARTIST>
+    <TITLE>Code</TITLE>
+    <ARTIST>Cabaret Voltaire</ARTIST>
     <COUNTRY>UK</COUNTRY>
     <COMPANY>EMI</COMPANY>
     <PRICE>10.90</PRICE>
-    <YEAR>1977</YEAR>
+    <YEAR>1987</YEAR>
   </CD>
   <CD>
     <PRIORITY>3</PRIORITY>
-    <TITLE>The Black Box</TITLE>
-    <ARTIST>Gasolin</ARTIST>
-    <COUNTRY>DK</COUNTRY>
-    <COMPANY>Columbia</COMPANY>
+    <TITLE>First Album</TITLE>
+    <ARTIST>Hacker</ARTIST>
+    <COUNTRY>FR</COUNTRY>
+    <COMPANY>Miss Kittin</COMPANY>
     <PRICE>9.90</PRICE>
-    <YEAR>2003</YEAR>
+    <YEAR>2001</YEAR>
   </CD>
 </CATALOG>
 <FOOD>
@@ -60,7 +60,7 @@
   </BREAKFAST_MENU>
 </FOOD>
 <PERSONAL>
-  <USERNAME>TESTBUGA</USERNAME>
-  <PASSWORD>NOTPASS</PASSWORD>
+  <USERNAME>USER</USERNAME>
+  <PASSWORD>PASS</PASSWORD>
 </PERSONAL>
 </DATABASE>

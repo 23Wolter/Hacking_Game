@@ -264,7 +264,7 @@ function writeKillSystem(phase) {
         $txt = $('<div>').attr({
             id: 'text_' + starting_index,
             class: 'text-output'
-        }).text("4/5 WHAT IS THE BEST CD ALBUM?").css('color', 'red');
+        }).text("4/5 WHAT IS THE BEST CD ALBUM TITLE?").css('color', 'red');
 
         $('#write-text').append($txt);
         
@@ -369,12 +369,12 @@ function writeEndText(playerAnswers, playerUsername) {
         $txt6 = $('<div>').attr({
             id: 'text_' + (starting_index + 5),
             class: 'text-output'
-        }).text("4/5 WHAT IS THE BEST CD ALBUM: OK").css('color', 'red');
+        }).text("4/5 WHAT IS THE BEST CD ALBUM TITLE: OK").css('color', 'red');
     } else {
         $txt6 = $('<div>').attr({
             id: 'text_' + (starting_index + 5),
             class: 'text-output'
-        }).text("4/5 WHAT IS THE BEST CD ALBUM: FAIL").css('color', 'red');
+        }).text("4/5 WHAT IS THE BEST CD ALBUM TITLE: FAIL").css('color', 'red');
     }
 
     // if phase 4 answer is correct 
