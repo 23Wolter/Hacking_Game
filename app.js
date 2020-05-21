@@ -41,7 +41,8 @@ db.once('open', function() {
     
     Game = databasesetup.initGameSchema(); 
     Room = databasesetup.initRoomSchema();
-    Player = databasesetup.initPlayerchema();  
+    Player = databasesetup.initPlayerchema(); 
+    Cloud = databasesetup.initCloudSchema();  
 });
 
 // a list of all current socket connections
@@ -128,6 +129,8 @@ io.on('connection', function(socket){
                 ]
             });
             
+            databasesetup.createCloud(newGameID); 
+
             console.log("newgame created: ", newgame); 
             
             // save new game to db 
@@ -572,9 +575,35 @@ function commandGoto(game_ID, player_ID, parameter, executeCommand) {
             var currentPlayer = playerfound; 
             var currentRoom = currentPlayer.room;
             var newRoom = null;
+
+            var roomToGo = parameter.toLowerCase();
             
             // if the user wishes to go back 
-            if(parameter == "..") {
+            if(parameter == ".." && currentRoom == "/root/users/admin/cloud") {
+
+                newRoom = "/root/users/admin";
+
+                Player.findOneAndUpdate({ 'playerID': player_ID }, {
+                    room: newRoom 
+                }, { 
+                    new: true,
+                    useFindAndModify: false
+                }, function(err, updatedPlayer) {
+                    if(err) console.error(err); 
+                
+                    if(updatedPlayer) {
+                        updatedPlayer.save(function(err) {
+                            if(err) console.error(err); 
+
+                            currentRoom = newRoom; 
+                            newRoom = "CHANGED FOLDER";
+                            executeCommand([newRoom], currentRoom);
+                            return; 
+                        });
+                    }
+                }); 
+            }
+            if(parameter == ".." && currentRoom != "/root/users/admin/cloud") {
                 
                 Room.find({'name': currentRoom}, function(err, roomfound) {
                     if(err) console.error(err);
@@ -604,8 +633,7 @@ function commandGoto(game_ID, player_ID, parameter, executeCommand) {
                 }); 
             
             // if the user types a room to go to 
-            } else {
-                var roomToGo = parameter.toLowerCase();
+            } else if(roomToGo != "cloud") {
                 
                 // if players wishes to enter admin folder - they need to type password 
                 if(roomToGo == "admin" && currentRoom == "/root/users") {
@@ -618,8 +646,8 @@ function commandGoto(game_ID, player_ID, parameter, executeCommand) {
                     roomToGo = "admin"; 
                 }
                 
-                roomToGo = currentRoom + "/" + roomToGo; 
-                
+                roomToGo = currentRoom + "/" + roomToGo;
+
                 Room.find({ 'name': roomToGo }, function(err, roomfound) {
                     if(err) console.error(err);
                     roomfound = roomfound[0]; 
@@ -660,9 +688,57 @@ function commandGoto(game_ID, player_ID, parameter, executeCommand) {
                         return;
                     }
                 });
+                
+            } else {
+
+                console.log("goto cloud gameid: " + game_ID); 
+
+                Cloud.find({ 'gameID': game_ID }, function(err, roomfound) {
+                    if(err) console.error(err);
+                    roomfound = roomfound[0]; 
+                    
+                    // if the desired room exists - update player room 
+                    if(roomfound) {
+                        newRoom = roomfound.name; 
+
+                        Player.findOneAndUpdate({ 'playerID': player_ID }, {
+                            room: newRoom, 
+                        }, { 
+                            new: true,
+                            useFindAndModify: false
+                        }, function(err, updatedPlayer) {
+                            if(err) console.error(err); 
+                            
+                            if(updatedPlayer) {
+                                updatedPlayer.save(function(err) {
+                                    if(err) console.error(err); 
+
+                                    currentRoom = newRoom; 
+                                    newRoom = "CHANGED FOLDER";
+                                    executeCommand([newRoom, "Welcome to the Cloud Service", "Accessing files will remove them from the cloud"], currentRoom);
+                                    return;
+                                });
+                            // if something goes wrong with updating the player room 
+                            } else {
+                                newRoom = "COULD NOT FIND DIRECTORY";
+                                executeCommand([newRoom], currentRoom);
+                                return;
+                            }
+                        }); 
+                    
+                    // if the desired room does not exist
+                    } else {
+                        newRoom = "COULD NOT FIND DIRECTORY";
+                        executeCommand([newRoom], currentRoom);
+                        return;
+                    }
+                });
+
             }
         });
 }
+
+
 
 // if the player enters the command LIST
 function commandList(game_ID, player_ID, executeCommand) {
@@ -672,44 +748,91 @@ function commandList(game_ID, player_ID, executeCommand) {
         var currentPlayer = playerfound; 
         var currentRoom = currentPlayer.room;
         var folders = []; 
-        var items = []; 
-        
-        Room.find({'name': currentRoom}, function(err, roomfound) {
-            if(err) console.error(err);
-            roomfound = roomfound[0]; 
-            
-            // look a the nextrooms of the current room 
-            for(let i=0; i<roomfound.nextRooms.length; i++) {
+        var items = [];
 
-                // put <dir> in front of all room/folder names 
-                let r = roomfound.nextRooms[i];
+        if(currentRoom == "/root/users/admin/cloud") {
+           
+            Cloud.find({'gameID': game_ID}, function(err, roomfound) {
+                if(err) console.error(err);
+                roomfound = roomfound[0]; 
+                
+                // look a the nextrooms of the current room 
+                for(let i=0; i<roomfound.nextRooms.length; i++) {
+                    
+                    // put <dir> in front of all room/folder names 
+                    let r = roomfound.nextRooms[i];
                     r = r.split("/"); 
                     r = r[r.length-1]; 
                     r = "<dir> " + r; 
                     folders[i] = r;
-            }
-
-            // look through each items in the current room
-            for(let j=0; j<roomfound.items.length; j++) {
-                let it = roomfound.items[j];
-
-                // if file is the hidden file, and the player has permission to view 
-                if(it == "some files are hidden" && currentPlayer.hiddenFiles) {
-                    it = "diary.txt"; 
                 }
+                
+                // look through each items in the current room
+                for(let j=0; j<roomfound.items.length; j++) {
+                    let it = roomfound.items[j];
+                    
+                    // if file is the hidden file, and the player has permission to view 
+                    if(it == "some files are hidden" && currentPlayer.hiddenFiles) {
+                        it = "diary.txt"; 
+                    }
+                    
+                    if(it == "hidden file" && currentPlayer.hiddenFiles) {
+                        it = "credits.txt"; 
+                    }
+                    
+                    // put <file> in front of all items/files
+                    it = "<file> " + it; 
+                    items[j] = it;
+                }
+                
+                // concatenate the rooms and items 
+                var list = folders.concat(items);
+                executeCommand(list, currentRoom);
+            });
 
-                // put <file> in front of all items/files
-                it = "<file> " + it; 
-                items[j] = it;
-            }
-
-            // concatenate the rooms and items 
-            var list = folders.concat(items);
-            executeCommand(list, currentRoom);
-        });
+        } else {
+   
+            Room.find({'name': currentRoom}, function(err, roomfound) {
+                if(err) console.error(err);
+                roomfound = roomfound[0]; 
+                
+                // look a the nextrooms of the current room 
+                for(let i=0; i<roomfound.nextRooms.length; i++) {
+                    
+                    // put <dir> in front of all room/folder names 
+                    let r = roomfound.nextRooms[i];
+                    r = r.split("/"); 
+                    r = r[r.length-1]; 
+                    r = "<dir> " + r; 
+                    folders[i] = r;
+                }
+                
+                // look through each items in the current room
+                for(let j=0; j<roomfound.items.length; j++) {
+                    let it = roomfound.items[j];
+                    
+                    // if file is the hidden file, and the player has permission to view 
+                    if(it == "some files are hidden" && currentPlayer.hiddenFiles) {
+                        it = "diary.txt"; 
+                    }
+                    
+                    if(it == "hidden file" && currentPlayer.hiddenFiles) {
+                        it = "credits.txt"; 
+                    }
+                    
+                    // put <file> in front of all items/files
+                    it = "<file> " + it; 
+                    items[j] = it;
+                }
+                
+                // concatenate the rooms and items 
+                var list = folders.concat(items);
+                executeCommand(list, currentRoom);
+            });
+        }
     }); 
 }
-
+    
 // if a player enters the command OPEN
 function commandOpen(game_ID, player_ID, parameter, executeCommand) {
 
@@ -718,26 +841,65 @@ function commandOpen(game_ID, player_ID, parameter, executeCommand) {
         var currentPlayer = playerfound; 
         var currentRoom = currentPlayer.room;        
         var file = null; 
-        
-        Room.find({'name': currentRoom}, function(err, roomfound) {
-            if(err) console.error(err);
-            
-            // look through each items in the current room to find the desired file/item
-            for(let i=0; i<roomfound[0].items.length; i++) {
 
-                if(parameter.toLowerCase() == "diary.txt") {
-                    file = "diary.txt"; 
-                } else if(roomfound[0].items[i].toLowerCase() == parameter.toLowerCase()) {
+
+        if(currentRoom == "/root/users/admin/cloud") {
+
+            Cloud.find({'gameID': game_ID}, function(err, roomfound) {
+                if(err) console.error(err);
+                
+                // look through each items in the current room to find the desired file/item
+                for(let i=0; i<roomfound[0].items.length; i++) {
                     
-                    file = roomfound[0].items[i];
-
-                    // if the desired file/item is database, edit it by exchanging the opponent username and password
-                    if(file == "database.txt") { editFile(file, currentPlayer); }
-                    break; 
+                    if(parameter.toLowerCase() == "credits.txt") {
+                        file = "credits.txt"; 
+                    } else if(roomfound[0].items[i].toLowerCase() == parameter.toLowerCase()) {
+                        
+                        file = roomfound[0].items[i];
+                        
+                        break; 
+                    }
                 }
-            }
-            executeCommand([(file) ? "OPENING " + parameter : "NO SUCH FILE"], currentRoom); 
-        });
+
+                Cloud.findOneAndUpdate({ 'gameID': game_ID }, {
+                    $pull: { 
+                        items: {
+                            $in: [file]
+                        } 
+                    }
+                }, { 
+                    new: true,
+                    useFindAndModify: false
+                 }, function(err, updatedgame) {
+                    if(err) console.error(err); 
+                    
+                    executeCommand([(file) ? "OPENING " + parameter : "NO SUCH FILE"], currentRoom); 
+                }); 
+            }); 
+        
+        } else {
+            
+            Room.find({'name': currentRoom}, function(err, roomfound) {
+                if(err) console.error(err);
+                
+                // look through each items in the current room to find the desired file/item
+                for(let i=0; i<roomfound[0].items.length; i++) {
+                    
+                    if(parameter.toLowerCase() == "diary.txt") {
+                        file = "diary.txt"; 
+                    } else if(parameter.toLowerCase() == "credits.txt") {
+                    } else if(roomfound[0].items[i].toLowerCase() == parameter.toLowerCase()) {
+                        
+                        file = roomfound[0].items[i];
+                        
+                        // if the desired file/item is database, edit it by exchanging the opponent username and password
+                        if(file == "database.txt") { editFile(file, currentPlayer); }
+                        break; 
+                    }
+                }
+                executeCommand([(file) ? "OPENING " + parameter : "NO SUCH FILE"], currentRoom); 
+            });
+        }
     }); 
 }
 

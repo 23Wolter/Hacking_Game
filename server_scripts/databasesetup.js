@@ -56,6 +56,24 @@ module.exports = {
         
         return Room; 
     },
+
+
+    initCloudSchema: function() {
+
+        // schema for rooms in the game
+        var cloudSchema = new mongoose.Schema({
+            name: String, 
+            gameID: String, 
+            accessible: Boolean,
+            nextRooms: { type: Array, default: []},
+            prevRoom: String,
+            items: { type: Array, default: []}
+        },{usePushEach: true}); 
+        
+        Cloud = mongoose.model('Cloud', cloudSchema);
+        
+        return Cloud; 
+    },
     
 
     // initialize the rooms with specific values 
@@ -127,7 +145,9 @@ module.exports = {
         var admin = new Room({
             name: "/root/users/admin",
             accessible: false,
-            nextRooms: [],
+            nextRooms: [
+                "/root/users/admin/cloud"
+            ],
             prevRoom: "/root/users",
             items: [
                 "system-settings.txt"
@@ -135,7 +155,32 @@ module.exports = {
         });
         
         admin.save(function (err) { if (err) console.error(err); });
-        
+
+
         console.log("all rooms are setup"); 
+    },
+    
+    createCloud: function(gameID) {
+        
+        var cloud = new Cloud({
+            name: "/root/users/admin/cloud",
+            gameID: gameID,
+            accessible: true,
+            nextRooms: [],
+            prevRoom: "/root/users/admin",
+            items: [
+                "clue-1.txt",
+                "clue-2.txt",
+                "clue-3.txt",
+                "clue-4.txt",
+                "clue-5.txt",
+                "clue-6.txt",
+                "hidden file"
+            ]
+        });
+        
+        cloud.save(function (err) { if (err) console.error(err); });
+        
+
     }
 }

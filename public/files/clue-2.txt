@@ -1,0 +1,5 @@
+Clue #2: 
+
+The best CD album <TITLE> has <PRIORITY> number 1
+
+Can You Hack It? 

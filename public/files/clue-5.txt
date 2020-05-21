@@ -1,0 +1,6 @@
+Clue #5: 
+
+The source code is the code behind a website 
+Sometimes, developers leave hidden messages in the source code 
+
+Can You Hack It? 
