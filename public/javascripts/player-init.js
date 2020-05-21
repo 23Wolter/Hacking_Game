@@ -12,6 +12,8 @@ var newuser;
 
 $(document).ready(function() { 
 
+    alert("Click in the middle of the screen to begin!"); 
+
     let start = false; 
     let interval; 
 

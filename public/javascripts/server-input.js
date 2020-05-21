@@ -269,7 +269,12 @@ $(document).ready(function() {
             $('#computer_glitch')[0].play();
 
             // write message from the winning player 
-            writeCommandFromServer(["...¤¤¤..@..?...*#..!.........", "* YOU HAVE BEEN HACKED *", ("incoming message from your hacker, " + serverInfo[3] + ": " + serverInfo[0])]);
+            writeCommandFromServer([
+                "...¤¤¤..@..?...*#..!.........", 
+                "* YOU HAVE BEEN HACKED *", 
+                "incoming message from your hacker, " + serverInfo[3],
+                "" + serverInfo[0]
+            ]); 
 
             // turn off the monitor 
             setTimeout(function() {

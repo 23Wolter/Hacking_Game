@@ -13,7 +13,7 @@ boot
 
 ## system-settings ##
 *********************
-help - type the following settings in the admin folder
+type the following settings in the admin folder
 
 ## SHOW HIDDEN-FILES
 

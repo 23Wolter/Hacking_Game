@@ -743,7 +743,7 @@ function commandOpen(game_ID, player_ID, parameter, executeCommand) {
 
 String.prototype.replaceBetween = function(start, end, what) {
     return this.substring(0, start) + what + this.substring(end);
-  };
+};
   
 //   console.log("The Hello World Code!".replaceBetween(4, 9, "Hi"));
 
