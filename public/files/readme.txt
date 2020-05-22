@@ -11,3 +11,5 @@ Guide to excecute a complete system shutdown:
 4. once authorized, enter the killcode 
 
   4.1 the killcode is a sequence of numbers  
+
+5. clues are stored on the cloud

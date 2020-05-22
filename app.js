@@ -265,6 +265,12 @@ io.on('connection', function(socket){
                     io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
                 }); 
                 break;
+            case "SHARE":
+                console.log("player entered SHARE"); 
+                commandShare(game_ID, player_ID, parameter, function(output, currentRoom) {
+                    io.emit('player command', [output, game_ID, player_ID, currentRoom]); 
+                });  
+                break; 
             default: 
                 getPlayer(player_ID, function(playerfound) {
                     let currentRoom = playerfound.room;
@@ -715,7 +721,12 @@ function commandGoto(game_ID, player_ID, parameter, executeCommand) {
 
                                     currentRoom = newRoom; 
                                     newRoom = "CHANGED FOLDER";
-                                    executeCommand([newRoom, "Welcome to the Cloud Service", "Accessing files will remove them from the cloud"], currentRoom);
+                                    executeCommand([
+                                            newRoom, 
+                                            "Welcome to the Cloud Service", 
+                                            "* Accessing files will remove them from the cloud",
+                                            "* Type SHARE [filename] to add files to the cloud"
+                                        ], currentRoom);
                                     return;
                                 });
                             // if something goes wrong with updating the player room 
@@ -1004,5 +1015,60 @@ function commandKillcode(game_ID, player_ID, parameter, executeCommand) {
             }
         }
         executeCommand([(output) ? output : "READ THE INSTRUCTIONS MORE CAREFULLY"], currentRoom); 
+    }); 
+}
+
+
+let cloudFiles = [
+    "clue-1.txt",
+    "clue-2.txt",
+    "clue-3.txt",
+    "clue-4.txt",
+    "clue-5.txt",
+    "clue-6.txt"
+]
+function commandShare(game_ID, player_ID, parameter, executeCommand) {
+    
+    getPlayer(player_ID, function(playerfound) {
+
+        let currentRoom = playerfound.room; 
+        let output = null; 
+
+        if(currentRoom == "/root/users/admin/cloud") {
+            
+            let fileFound = false; 
+            for(let i=0; i<cloudFiles.length; i++) {
+                if(parameter.toLowerCase() == cloudFiles[i]) {
+                    fileFound = true; 
+                    break; 
+                }
+            }
+            if(parameter.toLowerCase() == "credits.txt") {
+                fileFound = true; 
+                parameter = "hidden file"; 
+            }
+            
+            if(fileFound) {
+
+                Cloud.findOneAndUpdate({ 'gameID': game_ID }, {
+                    $push: { items: parameter },
+                }, { 
+                    new: true,
+                    useFindAndModify: false
+                }, function(err, updatedgame) {
+                    if(err) console.error(err); 
+                    
+                    output = "FILE '" + parameter + "' UPLOADED SUCCESFULLY";
+                    executeCommand([output], currentRoom); 
+                }); 
+            } else {
+                output = "FILE NOT FOUND";     
+                executeCommand([output], currentRoom); 
+            }
+                
+        } else {
+            output = "FILES CAN ONLY BE SHARED THROUGH THE CLOUD SERVICE"; 
+            executeCommand([output], currentRoom); 
+        }
     }); 
 }
